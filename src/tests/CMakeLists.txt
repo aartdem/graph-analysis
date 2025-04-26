@@ -22,5 +22,5 @@ add_executable(${BINARY} ${TEST_SOURCES})
 
 target_link_libraries(${BINARY} algos_lib GTest::gtest_main)
 
-gtest_discover_tests(${BINARY} WORKING_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
+gtest_discover_tests(${BINARY})
 
