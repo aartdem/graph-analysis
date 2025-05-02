@@ -1,0 +1,4 @@
+[submodule "deps/spla"]
+	path = deps/spla
+	url = https://github.com/SparseLinearAlgebra/spla.git
+	branch = main
