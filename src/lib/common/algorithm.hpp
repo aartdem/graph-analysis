@@ -6,7 +6,7 @@ namespace algos
     {
     public:
         virtual ~Algorithm() {}
-        virtual void load_graph(std::string path) = 0;
+        virtual void load_graph(const std::filesystem::path &path) = 0;
         virtual std::chrono::duration<double> compute() = 0;
     };
 };

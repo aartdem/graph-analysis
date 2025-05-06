@@ -7,23 +7,16 @@ namespace algos
 {
     class PrimSpla : public MstAlgorithm
     {
-    public:
-        PrimSpla() {}
 
-        void load_graph(std::string file_path) override final;
+    public:
+        void load_graph(const std::filesystem::path &file_path) override final;
 
         std::chrono::duration<double> compute() override final;
 
         Tree get_result() override final;
 
-        ~PrimSpla() override final
-        {
-            loader.~MtxLoader();
-            return;
-        }
-
     private:
-        spla::MtxLoader loader = spla::MtxLoader();
+        std::unique_ptr<spla::MtxLoader> loader = std::make_unique<spla::MtxLoader>(spla::MtxLoader());
     };
 
 };

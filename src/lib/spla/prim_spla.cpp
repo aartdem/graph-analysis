@@ -4,10 +4,9 @@
 
 namespace algos
 {
-    void PrimSpla::load_graph(std::string file_path)
+    void PrimSpla::load_graph(const std::filesystem::path &file_path)
     {
-        auto path = std::filesystem::path(file_path);
-        if (!loader.load(path, true, false, false))
+        if (!loader->load(file_path, true, false, false))
         {
             throw std::runtime_error("Can not load graph from file");
         }
