@@ -1,0 +1,13 @@
+#pragma once
+
+#include "algorithm.hpp"
+#include "tree.hpp"
+
+namespace algos
+{
+    class MstAlgorithm : public Algorithm
+    {
+    public:
+        virtual Tree get_result() = 0;
+    };
+};
