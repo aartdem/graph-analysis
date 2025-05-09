@@ -1,12 +1,15 @@
 #pragma once
 
-namespace algos
-{
-    class Algorithm
-    {
+#include <chrono>
+#include <filesystem>
+
+namespace algos {
+    class Algorithm {
     public:
-        virtual ~Algorithm() {}
+        virtual ~Algorithm() = default;
+
         virtual void load_graph(const std::filesystem::path &path) = 0;
-        virtual std::chrono::duration<double> compute() = 0;
+
+        virtual std::chrono::seconds compute() = 0;
     };
 };
