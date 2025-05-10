@@ -3,6 +3,7 @@
 #include <spla.hpp>
 #include <fstream>
 #include <sstream>
+#include <cmath>
 
 using namespace std;
 using namespace spla;
