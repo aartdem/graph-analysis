@@ -38,6 +38,7 @@ namespace algos {
         n = n_input;
         edges = nnz_input;
         a = Matrix::make(n, n, INT);
+        //a->set_fill_value(Scalar::make_int(INF));
 
         int u, v, w;
         for (int i = 0; i < nnz_input; ++i) {
@@ -104,7 +105,7 @@ namespace algos {
             for (uint j = 0; j < n_cols; ++j) {
                 int val;
                 Status status = mat->get_int(i, j, val);
-                if (status == Status::Ok && val != 0) {
+                if (status == Status::Ok && val != INF) {
                     count++;
                 }
             }
@@ -248,35 +249,36 @@ namespace algos {
     pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(const ref_ptr<Vector> &v, const ref_ptr<Matrix> &A) {
         const uint32_t n = v->get_n_rows();
 
-        vector<int> component(n);
+        // Создаём временную матрицу, где нули заменены на INF
+        ref_ptr<Matrix> A_temp = Matrix::make(n, n, INT);
         for (uint i = 0; i < n; i++) {
-            v->get_int(i, component[i]);
-        }
-
-        ref_ptr<Vector> min_values = Vector::make(n, INT);
-        ref_ptr<Vector> min_indices = Vector::make(n, INT);
-
-        for (uint i = 0; i < n; i++) {
-            int min_val = INF;
-            int min_idx = -1;
-
             for (uint j = 0; j < n; j++) {
-                int edge_weight;
-                Status status = A->get_int(i, j, edge_weight);
-
-                if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
-                    if (edge_weight < min_val) {
-                        min_val = edge_weight;
-                        min_idx = j;
-                    }
+                int val;
+                Status status = A->get_int(i, j, val);
+                if (status == Status::Ok && val != 0) {
+                    A_temp->set_int(i, j, val);  // Сохраняем ненулевые значения
+                } else {
+                    A_temp->set_int(i, j, INF);  // Заменяем нули на INF
                 }
             }
-
-            min_values->set_int(i, min_val);
-            min_indices->set_int(i, min_idx);
         }
 
-        return {min_values, min_indices};
+        // Строим матрицу F как и раньше
+        ref_ptr<Matrix> F = Matrix::make(n, n, INT);
+        for (size_t row = 0; row < n; row++) {
+            int col;
+            v->get_int(row, col);
+            F->set_int(row, col, 1);
+        }
+
+        // Правильное использование INF как начального значения для умножения
+        ref_ptr<Scalar> inf_scalar = Scalar::make_int(INF);
+        ref_ptr<Matrix> W = Matrix::make(n, n, INT);
+
+        // Выполняем умножение матриц с операциями MULT_INT и MIN_INT
+        exec_mxm(W, A_temp, F, MULT_INT, MIN_INT, inf_scalar);
+
+        return row_min_and_argmin(W);
     }
 
 
