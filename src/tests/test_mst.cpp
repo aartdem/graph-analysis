@@ -48,7 +48,7 @@ namespace tests {
     }
 
     template<class T>
-    algos::MstAlgorithm *create_mst_algo();
+    algos::MstAlgorithm *create_mst_algo(); // implement parametrized function for each MST algorithm
 
     template<>
     algos::MstAlgorithm *create_mst_algo<algos::PrimSpla>() {
@@ -73,7 +73,8 @@ namespace tests {
             {"one_edge.mtx",       2},
             {"test1.mtx",          22},
             {"small.mtx",          120},
-            {"Trefethen_2000.mtx", 1999}
+            {"Trefethen_2000.mtx", 1999},
+            {"two_components_float.mtx", 14}
     };
 
     TYPED_TEST(MstAlgorithmTest, IsCorrectMst) {
@@ -82,7 +83,7 @@ namespace tests {
             this->algo->load_graph(file);
             this->algo->compute();
             auto res = this->algo->get_result();
-            ASSERT_EQ(test_case.expected_weight, res.weight);
+            ASSERT_FLOAT_EQ(test_case.expected_weight, res.weight);
             ASSERT_TRUE(is_tree_or_forest(res.parent));
         }
     }
