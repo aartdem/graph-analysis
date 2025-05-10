@@ -27,7 +27,7 @@ namespace tests {
 
     bool is_tree_or_forest(const std::vector<int> &parent) {
         int n = int(parent.size());
-        std::vector<bool> visited(n, false);
+        std::vector visited(n, false);
         std::vector<std::vector<int>> g(n);
         for (int i = 0; i < n; ++i) {
             if (parent[i] > n) {
@@ -52,8 +52,14 @@ namespace tests {
     algos::MstAlgorithm *create_mst_algo(); // implement parametrized function for each MST algorithm
 
     template<>
-    algos::MstAlgorithm *create_mst_algo<algos::BoruvkaSpla>() {
+    algos::MstAlgorithm *create_mst_algo<algos::PrimSpla>() {
         return new algos::PrimSpla();
+    }
+
+
+    template<>
+    algos::MstAlgorithm *create_mst_algo<algos::BoruvkaSpla>() {
+        return new algos::BoruvkaSpla();
     }
 
     template<typename T>
@@ -66,7 +72,7 @@ namespace tests {
         algos::MstAlgorithm *const algo;
     };
 
-    using AlgosTypes = ::testing::Types<algos::BoruvkaSpla>; // extend this with other MST algorimths
+    using AlgosTypes = ::testing::Types<algos::PrimSpla, algos::BoruvkaSpla>; // extend this with other MST algorimths
     TYPED_TEST_SUITE(MstAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {
