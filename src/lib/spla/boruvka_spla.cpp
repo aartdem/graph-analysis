@@ -10,7 +10,7 @@ using namespace spla;
 namespace algos {
 
     using clock = chrono::steady_clock;
-    constexpr int INF = 1e9;
+    constexpr float INF = 1e9f;
 
     void BoruvkaSpla::load_graph(const filesystem::path &file_path) {
         ifstream input(file_path);
@@ -31,9 +31,12 @@ namespace algos {
         }
         n = n_input;
         edges = nnz_input;
-        a = Matrix::make(n, n, INT);
+        buffer_int = vector<int>(n);
+        buffer_float = vector<float>(n);
+        a = Matrix::make(n, n, FLOAT);
 
-        int u, v, w;
+        int u, v;
+        float w;
         for (int i = 0; i < nnz_input; ++i) {
             input >> u >> v >> w;
             u--;
@@ -45,8 +48,8 @@ namespace algos {
                 throw runtime_error("Invalid graph, negative edges");
             }
             if (u != v) {
-                a->set_int(u, v, w);
-                a->set_int(v, u, w);
+                a->set_float(u, v, w);
+                a->set_float(v, u, w);
             }
         }
     }
@@ -60,16 +63,15 @@ namespace algos {
 
     Tree BoruvkaSpla::get_result() {
         const auto sparse_sz = Scalar::make_int(0);
-        auto buffer_int = vector<int>(n);
         vector p(n, -1);
         exec_v_count_mf(sparse_sz, mst);
         auto keys_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
-        auto values_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
+        auto values_view = MemView::make(buffer_float.data(), sparse_sz->as_int());
         mst->read(keys_view, values_view);
         const auto keys = static_cast<int *>(keys_view->get_buffer());
-        const auto values = static_cast<int *>(values_view->get_buffer());
+        const auto values = static_cast<float *>(values_view->get_buffer());
         for (int i = 0; i < sparse_sz->as_int(); i++) {
-            p[keys[i]] = values[i];
+            p[keys[i]] = static_cast<int>(std::round(values[i]));
         }
         return Tree{n, p, weight};
     }
@@ -80,11 +82,12 @@ namespace algos {
         auto sz = Scalar::make_int(0);
         exec_v_count_mf(sz, v);
         auto buffer_int = std::vector<int>(sz->as_int());
+        auto buffer_float = std::vector<float>(sz->as_int());
         auto keys_view = MemView::make(buffer_int.data(), sz->as_int());
-        auto values_view = MemView::make(buffer_int.data(), sz->as_int());
+        auto values_view = MemView::make(buffer_float.data(), sz->as_int());
         v->read(keys_view, values_view);
         auto keys = static_cast<int *>(keys_view->get_buffer());
-        auto values = static_cast<int *>(values_view->get_buffer());
+        auto values = static_cast<float *>(values_view->get_buffer());
         for (int i = 0; i < sz->as_int(); i++) {
             std::cout << keys[i] << ' ' << values[i] << '\n';
         }
@@ -97,8 +100,8 @@ namespace algos {
 
         for (uint i = 0; i < n_rows; ++i) {
             for (uint j = 0; j < n_cols; ++j) {
-                int val;
-                Status status = mat->get_int(i, j, val);
+                float val;
+                Status status = mat->get_float(i, j, val);
                 if (status == Status::Ok && val != INF) {
                     count++;
                 }
@@ -112,14 +115,15 @@ namespace algos {
         int nnz = count_nonzero_elements(m);
 
         auto buffer_int = std::vector<int>(nnz);
+        auto buffer_float = std::vector<float>(nnz);
         auto rows_view = MemView::make(buffer_int.data(), nnz);
         auto cols_view = MemView::make(buffer_int.data(), nnz);
-        auto values_view = MemView::make(buffer_int.data(), nnz);
+        auto values_view = MemView::make(buffer_float.data(), nnz);
         m->read(rows_view, cols_view, values_view);
 
         auto rows = static_cast<int *>(rows_view->get_buffer());
         auto cols = static_cast<int *>(cols_view->get_buffer());
-        auto values = static_cast<int *>(values_view->get_buffer());
+        auto values = static_cast<float *>(values_view->get_buffer());
 
         for (uint i = 0; i < nnz; ++i) {
             std::cout << rows[i] << " " << cols[i] << " " << values[i] << "\n";
@@ -135,7 +139,7 @@ namespace algos {
 
     void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n) {
         for (int i = 0; i < n; ++i) {
-            f->set_int(i, find_root(parent, i));
+            f->set_float(i, static_cast<float>(find_root(parent, i)));
         }
     }
 
@@ -144,48 +148,48 @@ namespace algos {
         const ref_ptr<Matrix> &A) {
 
         const uint32_t n = v->get_n_rows();
-        const auto inf_scalar = Scalar::make_int(INF);
+        const auto inf_scalar = Scalar::make_float(INF);
 
-        ref_ptr<Vector> min_values = Vector::make(n, INT);
+        ref_ptr<Vector> min_values = Vector::make(n, FLOAT);
         min_values->set_fill_value(inf_scalar);
-        ref_ptr<Vector> min_indices = Vector::make(n, INT);
-        min_indices->set_fill_value(Scalar::make_int(-1));
+        ref_ptr<Vector> min_indices = Vector::make(n, FLOAT);
+        min_indices->set_fill_value(Scalar::make_float(-1.0f));
 
-        auto filtered_A = Matrix::make(n, n, INT);
-        filtered_A->set_fill_value(Scalar::make_int(0));
+        auto filtered_A = Matrix::make(n, n, FLOAT);
+        filtered_A->set_fill_value(Scalar::make_float(0.0f));
 
-        vector<int> component(n);
+        vector<float> component(n);
         for (uint i = 0; i < n; i++) {
-            v->get_int(i, component[i]);
+            v->get_float(i, component[i]);
         }
 
         for (uint i = 0; i < n; i++) {
             for (uint j = 0; j < n; j++) {
-                int edge_weight;
-                Status status = A->get_int(i, j, edge_weight);
+                float edge_weight;
+                Status status = A->get_float(i, j, edge_weight);
 
-                if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
-                    filtered_A->set_int(i, j, edge_weight);
+                if (status == Status::Ok && edge_weight != 0.0f && component[i] != component[j]) {
+                    filtered_A->set_float(i, j, edge_weight);
                 }
             }
         }
 
         // Search for Minimum Weight for Each Vertex
-        exec_m_reduce_by_row(min_values, filtered_A, MIN_INT, inf_scalar);
+        exec_m_reduce_by_row(min_values, filtered_A, MIN_FLOAT, inf_scalar);
 
         for (uint i = 0; i < n; i++) {
-            int min_val;
-            min_values->get_int(i, min_val);
+            float min_val;
+            min_values->get_float(i, min_val);
 
             if (min_val == INF) {
                 continue;
             }
 
             for (uint j = 0; j < n; j++) {
-                int val;
-                Status status = filtered_A->get_int(i, j, val);
+                float val;
+                Status status = filtered_A->get_float(i, j, val);
                 if (status == Status::Ok && val == min_val) {
-                    min_indices->set_int(i, j);
+                    min_indices->set_float(i, static_cast<float>(j));
                     break;
                 }
             }
@@ -195,17 +199,17 @@ namespace algos {
     }
 
     void BoruvkaSpla::compute_() {
-        mst = Vector::make(n, INT);
-        const auto neg_one = Scalar::make_int(-1);
+        mst = Vector::make(n, FLOAT);
+        const auto neg_one = Scalar::make_float(-1.0f);
         mst->set_fill_value(neg_one);
         mst->fill_with(neg_one);
-        weight = 0;
+        weight = 0.0f;
 
         const auto parent = static_cast<int *>(malloc(sizeof(int) * n));
         for (int i = 0; i < n; i++)
             parent[i] = i;
 
-        const ref_ptr<Vector> v_parent = Vector::make(n, INT);
+        const ref_ptr<Vector> v_parent = Vector::make(n, FLOAT);
 
         while (true) {
             update_v_parent(v_parent, parent, n);
@@ -222,9 +226,11 @@ namespace algos {
             // Identifying the Optimal Edge for Each Component
             for (int i = 0; i < n; i++) {
                 int p = find_root(parent, i);
-                int edge_weight_i, edge_j_i;
-                const Status s1 = min_values->get_int(i, edge_weight_i);
-                const Status s2 = min_indices->get_int(i, edge_j_i);
+                float edge_weight_i;
+                float edge_j_i_float;
+                const Status s1 = min_values->get_float(i, edge_weight_i);
+                const Status s2 = min_indices->get_float(i, edge_j_i_float);
+                int edge_j_i = static_cast<int>(edge_j_i_float);
 
                 if (s1 == Status::Ok && s2 == Status::Ok &&
                     edge_j_i != -1 && edge_weight_i < cedge_weight[p]) {
@@ -243,7 +249,7 @@ namespace algos {
                         parent[p] = root_v;
                         changed = true;
 
-                        mst->set_int(u, v);
+                        mst->set_float(u, static_cast<float>(v));
                         weight += cedge_weight[p];
                     }
                 }

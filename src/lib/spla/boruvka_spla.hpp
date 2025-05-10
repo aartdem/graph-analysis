@@ -19,8 +19,10 @@ namespace algos {
         std::unique_ptr<Tree> tree = nullptr;
         int n;
         int edges;
-        int weight = 0;
+        float weight = 0;
         spla::ref_ptr<spla::Matrix> a;
         spla::ref_ptr<spla::Vector> mst;
+        std::vector<int> buffer_int;
+        std::vector<float> buffer_float;
     };
 }
