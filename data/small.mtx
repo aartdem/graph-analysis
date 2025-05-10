@@ -1,4 +1,4 @@
-%%MatrixMarket matrix coordinate real symmetric
+%%MatrixMarket matrix coordinate integer symmetric
 % NOTE: the weights were randomly generated
 %-------------------------------------------------------------------------------
 % UF Sparse Matrix Collection, Tim Davis

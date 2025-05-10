@@ -3,6 +3,7 @@
 namespace algos {
     struct Tree {
         int n;
+        // parent[i] = -1 if i is root
         std::vector<int> parent;
         int weight;
 
