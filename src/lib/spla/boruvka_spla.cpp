@@ -15,6 +15,9 @@ namespace algos {
     int find_root(int* parent, int x);
     void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n);
 
+    using clock = chrono::steady_clock;
+    constexpr int INF = 1e9;
+
     void BoruvkaSpla::load_graph(const filesystem::path &file_path) {
         ifstream input(file_path);
         string line;
@@ -53,9 +56,6 @@ namespace algos {
             }
         }
     }
-
-    using clock = chrono::steady_clock;
-    constexpr int INF = 1e9;
 
     chrono::seconds BoruvkaSpla::compute() {
         const auto start = clock::now();
@@ -150,8 +150,6 @@ namespace algos {
         while (true) {
             update_v_parent(f, parent, n);
             auto [min_values, min_indices] = comb_min_product(f, a);
-            print_vector(min_values, "min_values");
-            print_vector(min_indices, "min_indices");
 
             // Выделяем память для хранения рёбер
             auto cedge_weight = static_cast<int *>(malloc(sizeof(int) * n));
@@ -249,22 +247,38 @@ namespace algos {
 
     pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(const ref_ptr<Vector> &v, const ref_ptr<Matrix> &A) {
         const uint32_t n = v->get_n_rows();
-        ref_ptr<Matrix> F = Matrix::make(n, n, INT);
-        for (size_t row = 0; row < n; row++)
-        {
-            int col;
-            v->get_int(row, col);
-            F->set_int(row, col, 1);
+
+        vector<int> component(n);
+        for (uint i = 0; i < n; i++) {
+            v->get_int(i, component[i]);
         }
-        ref_ptr<Scalar> zero = Scalar::make_int(0);
-        //print_matrix(F, "matrix F");
-    
-        ref_ptr<Matrix> W = Matrix::make(n, n, INT);
-        exec_mxm(W, A, F, MULT_INT, MIN_INT, zero);
-        print_matrix(W, "matrix W");
-    
-        return row_min_and_argmin(W);
+
+        ref_ptr<Vector> min_values = Vector::make(n, INT);
+        ref_ptr<Vector> min_indices = Vector::make(n, INT);
+
+        for (uint i = 0; i < n; i++) {
+            int min_val = INF;
+            int min_idx = -1;
+
+            for (uint j = 0; j < n; j++) {
+                int edge_weight;
+                Status status = A->get_int(i, j, edge_weight);
+
+                if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
+                    if (edge_weight < min_val) {
+                        min_val = edge_weight;
+                        min_idx = j;
+                    }
+                }
+            }
+
+            min_values->set_int(i, min_val);
+            min_indices->set_int(i, min_idx);
+        }
+
+        return {min_values, min_indices};
     }
+
 
     int find_root(int *parent, int x) {
         if (parent[x] != x) {
