@@ -8,13 +8,6 @@ using namespace std;
 using namespace spla;
 
 namespace algos {
-    std::pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(
-        const ref_ptr<Vector> &v,
-        const ref_ptr<Matrix> &A
-    );
-    int find_root(int* parent, int x);
-    void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n);
-
     using clock = chrono::steady_clock;
     constexpr int INF = 1e9;
 
@@ -64,13 +57,11 @@ namespace algos {
         const auto end = clock::now();
         return chrono::duration_cast<chrono::seconds>(end - start);
     }
-    void print_vector(const ref_ptr<Vector> &v, const std::string &name);
 
     Tree BoruvkaSpla::get_result() {
         const auto sparse_sz = Scalar::make_int(0);
         auto buffer_int = vector<int>(n);
         vector p(n, -1);
-        print_vector(mst, "mst");
         exec_v_count_mf(sparse_sz, mst);
         auto keys_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
         auto values_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
@@ -83,6 +74,7 @@ namespace algos {
         return Tree{n, p, weight};
     }
 
+    // for debug
     void print_vector(const ref_ptr<Vector> &v, const std::string &name = "") {
         std::cout << "-- " << name << " --\n";
         auto sz = Scalar::make_int(0);
@@ -91,8 +83,8 @@ namespace algos {
         auto keys_view = MemView::make(buffer_int.data(), sz->as_int());
         auto values_view = MemView::make(buffer_int.data(), sz->as_int());
         v->read(keys_view, values_view);
-        auto keys = (int *) keys_view->get_buffer();
-        auto values = (int *) values_view->get_buffer();
+        auto keys = static_cast<int *>(keys_view->get_buffer());
+        auto values = static_cast<int *>(values_view->get_buffer());
         for (int i = 0; i < sz->as_int(); i++) {
             std::cout << keys[i] << ' ' << values[i] << '\n';
         }
@@ -117,24 +109,29 @@ namespace algos {
 
     void print_matrix(const ref_ptr<Matrix>& m, const std::string& name = "") {
         std::cout << "-- " << name << " --\n";
-        int foo = count_nonzero_elements(m);
+        int nnz = count_nonzero_elements(m);
 
-        // Получаем все ненулевые элементы
-        auto buffer_int = std::vector<int>(foo);
-        auto rows_view = MemView::make(buffer_int.data(), foo);
-        auto cols_view = MemView::make(buffer_int.data(), foo);
-        auto values_view = MemView::make(buffer_int.data(), foo);
+        auto buffer_int = std::vector<int>(nnz);
+        auto rows_view = MemView::make(buffer_int.data(), nnz);
+        auto cols_view = MemView::make(buffer_int.data(), nnz);
+        auto values_view = MemView::make(buffer_int.data(), nnz);
         m->read(rows_view, cols_view, values_view);
 
-        auto rows = (int *) rows_view->get_buffer();
-        auto cols = (int *) cols_view->get_buffer();
-        auto values = (int *) values_view->get_buffer();
+        auto rows = static_cast<int *>(rows_view->get_buffer());
+        auto cols = static_cast<int *>(cols_view->get_buffer());
+        auto values = static_cast<int *>(values_view->get_buffer());
 
-        // Печатаем в формате "i j value"
-        for (uint i = 0; i < foo; ++i) {
+        for (uint i = 0; i < nnz; ++i) {
             std::cout << rows[i] << " " << cols[i] << " " << values[i] << "\n";
         }
     }
+
+    std::pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(
+        const ref_ptr<Vector> &v,
+        const ref_ptr<Matrix> &A
+    );
+    int find_root(int* parent, int x);
+    void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n);
 
     void BoruvkaSpla::compute_() {
         mst = Vector::make(n, INT);
@@ -209,43 +206,36 @@ namespace algos {
         ref_ptr<Vector> min_indices = Vector::make(n, INT);
         min_indices->set_fill_value(Scalar::make_int(-1));
 
-        // Создаем временную матрицу для фильтрованных рёбер
         auto filtered_A = Matrix::make(n, n, INT);
         filtered_A->set_fill_value(Scalar::make_int(0));
 
-        // Извлекаем ID компонент
         vector<int> component(n);
         for (uint i = 0; i < n; i++) {
             v->get_int(i, component[i]);
         }
 
-        // Создаем фильтрованную матрицу с рёбрами только между разными компонентами
         for (uint i = 0; i < n; i++) {
             for (uint j = 0; j < n; j++) {
                 int edge_weight;
                 Status status = A->get_int(i, j, edge_weight);
 
-                // Оставляем только рёбра между разными компонентами
                 if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
                     filtered_A->set_int(i, j, edge_weight);
                 }
             }
         }
 
-        // Используем операцию над матрицей для поиска минимального веса для каждой вершины
+        // Search for Minimum Weight for Each Vertex
         exec_m_reduce_by_row(min_values, filtered_A, MIN_INT, inf_scalar);
 
-        // Находим индексы минимальных элементов
         for (uint i = 0; i < n; i++) {
             int min_val;
             min_values->get_int(i, min_val);
 
-            // Пропускаем, если нет исходящих рёбер (значение INF)
             if (min_val == INF) {
                 continue;
             }
 
-            // Находим индекс столбца с этим минимальным значением
             for (uint j = 0; j < n; j++) {
                 int val;
                 Status status = filtered_A->get_int(i, j, val);
@@ -270,6 +260,10 @@ namespace algos {
     void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n) {
         for (int i = 0; i < n; ++i) {
             f->set_int(i, find_root(parent, i));
+        }
+
+        for (int i = 0; i < n; ++i) {
+            f->set_int(i, parent[i]);
         }
     }
 }
