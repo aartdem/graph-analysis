@@ -137,79 +137,60 @@ namespace algos {
     }
 
     void BoruvkaSpla::compute_() {
-        // Initialize MST and weight
         mst = Vector::make(n, INT);
         const auto neg_one = Scalar::make_int(-1);
         mst->set_fill_value(neg_one);
+        mst->fill_with(neg_one);
         weight = 0;
 
-        // Initialize parent array for union-find
         const auto parent = static_cast<int *>(malloc(sizeof(int) * n));
         for (int i = 0; i < n; i++)
             parent[i] = i;
 
-        // Component vector
-        const ref_ptr<Vector> f = Vector::make(n, INT);
-        const auto inf_scalar = Scalar::make_int(INF);
+        const ref_ptr<Vector> v_parent = Vector::make(n, INT);
 
         while (true) {
-            // Update component IDs using vector operation
-            update_v_parent(f, parent, n);
+            update_v_parent(v_parent, parent, n);
 
-            // Find minimum outgoing edge for each vertex using matrix operations
-            auto [min_values, min_indices] = comb_min_product(f, a);
+            // Search for Minimal Outgoing Edges for Each Vertex
+            auto [min_values, min_indices] = comb_min_product(v_parent, a);
 
-            // Track if the MST changed in this iteration
             bool changed = false;
 
-            // Process component edges - use vector of pairs to collect results
-            std::vector<std::tuple<int, int, int>> edges_to_add;
+            std::vector cedge_weight(n, INF);
+            std::vector cedge_j(n, -1);
+            std::vector cedge_u(n, -1);
 
-            // Create component edge tracking arrays
-            exec_callback([&]() {
-                // Arrays for tracking best edge per component
-                std::vector<int> cedge_weight(n, INF);
-                std::vector<int> cedge_j(n, -1);
-                std::vector<int> cedge_u(n, -1);
+            // Identifying the Optimal Edge for Each Component
+            for (int i = 0; i < n; i++) {
+                int p = find_root(parent, i);
+                int edge_weight_i, edge_j_i;
+                const Status s1 = min_values->get_int(i, edge_weight_i);
+                const Status s2 = min_indices->get_int(i, edge_j_i);
 
-                // Find minimum outgoing edge for each component
-                for (int i = 0; i < n; i++) {
-                    int p = find_root(parent, i);
-                    int edge_weight_i, edge_j_i;
-                    min_values->get_int(i, edge_weight_i);
-                    min_indices->get_int(i, edge_j_i);
-
-                    if (edge_j_i != -1 && edge_weight_i < cedge_weight[p]) {
-                        cedge_weight[p] = edge_weight_i;
-                        cedge_j[p] = edge_j_i;
-                        cedge_u[p] = i;
-                    }
+                if (s1 == Status::Ok && s2 == Status::Ok &&
+                    edge_j_i != -1 && edge_weight_i < cedge_weight[p]) {
+                    cedge_weight[p] = edge_weight_i;
+                    cedge_j[p] = edge_j_i;
+                    cedge_u[p] = i;
                 }
-
-                // Add edges to MST and merge components
-                for (int p = 0; p < n; p++) {
-                    if (parent[p] == p && cedge_j[p] != -1) {
-                        const int v = cedge_j[p];
-                        const int root_v = find_root(parent, v);
-                        if (p != root_v) {
-                            const int u = cedge_u[p];
-                            edges_to_add.push_back({u, v, cedge_weight[p]});
-                            parent[p] = root_v;
-                            changed = true;
-                        }
-                    }
-                }
-
-                return Status::Ok;
-            });
-
-            // Update MST with new edges
-            for (const auto& [u, v, w] : edges_to_add) {
-                mst->set_int(u, v);
-                weight += w;
             }
 
-            // If no changes were made, algorithm is complete
+            for (int p = 0; p < n; p++) {
+                if (parent[p] == p && cedge_j[p] != -1) {
+                    const int v = cedge_j[p];
+                    const int root_v = find_root(parent, v);
+                    if (p != root_v) {
+                        const int u = cedge_u[p];
+                        parent[p] = root_v;
+                        changed = true;
+
+                        mst->set_int(u, v);
+                        weight += cedge_weight[p];
+                    }
+                }
+            }
+
             if (!changed) break;
         }
 
@@ -223,65 +204,57 @@ namespace algos {
         const uint32_t n = v->get_n_rows();
         const auto inf_scalar = Scalar::make_int(INF);
 
-        // Create result vectors
         ref_ptr<Vector> min_values = Vector::make(n, INT);
         min_values->set_fill_value(inf_scalar);
         ref_ptr<Vector> min_indices = Vector::make(n, INT);
         min_indices->set_fill_value(Scalar::make_int(-1));
 
-        // Create temp matrix for filtered edges
+        // Создаем временную матрицу для фильтрованных рёбер
         auto filtered_A = Matrix::make(n, n, INT);
         filtered_A->set_fill_value(Scalar::make_int(0));
 
-        // Step 1: Filter edges - keep only edges between different components
-        exec_callback([&]() {
-            // Extract component IDs
-            vector<int> component(n);
-            for (uint i = 0; i < n; i++) {
-                v->get_int(i, component[i]);
-            }
+        // Извлекаем ID компонент
+        vector<int> component(n);
+        for (uint i = 0; i < n; i++) {
+            v->get_int(i, component[i]);
+        }
 
-            // Create filtered matrix with only cross-component edges
-            for (uint i = 0; i < n; i++) {
-                for (uint j = 0; j < n; j++) {
-                    int edge_weight;
-                    Status status = A->get_int(i, j, edge_weight);
+        // Создаем фильтрованную матрицу с рёбрами только между разными компонентами
+        for (uint i = 0; i < n; i++) {
+            for (uint j = 0; j < n; j++) {
+                int edge_weight;
+                Status status = A->get_int(i, j, edge_weight);
 
-                    // Only keep edges between different components
-                    if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
-                        filtered_A->set_int(i, j, edge_weight);
-                    }
+                // Оставляем только рёбра между разными компонентами
+                if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
+                    filtered_A->set_int(i, j, edge_weight);
                 }
             }
-            return Status::Ok;
-        });
+        }
 
-        // Step 2: Use matrix row reduction to find minimum weight per vertex
+        // Используем операцию над матрицей для поиска минимального веса для каждой вершины
         exec_m_reduce_by_row(min_values, filtered_A, MIN_INT, inf_scalar);
 
-        // Step 3: Find the indices of minimum elements
-        exec_callback([&]() {
-            for (uint i = 0; i < n; i++) {
-                int min_val;
-                min_values->get_int(i, min_val);
+        // Находим индексы минимальных элементов
+        for (uint i = 0; i < n; i++) {
+            int min_val;
+            min_values->get_int(i, min_val);
 
-                // Skip if no outgoing edges (INF value)
-                if (min_val == INF) {
-                    continue;
-                }
+            // Пропускаем, если нет исходящих рёбер (значение INF)
+            if (min_val == INF) {
+                continue;
+            }
 
-                // Find the column index with this minimum value
-                for (uint j = 0; j < n; j++) {
-                    int val;
-                    Status status = filtered_A->get_int(i, j, val);
-                    if (status == Status::Ok && val == min_val) {
-                        min_indices->set_int(i, j);
-                        break;
-                    }
+            // Находим индекс столбца с этим минимальным значением
+            for (uint j = 0; j < n; j++) {
+                int val;
+                Status status = filtered_A->get_int(i, j, val);
+                if (status == Status::Ok && val == min_val) {
+                    min_indices->set_int(i, j);
+                    break;
                 }
             }
-            return Status::Ok;
-        });
+        }
 
         return {min_values, min_indices};
     }

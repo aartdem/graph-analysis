@@ -32,7 +32,7 @@ namespace tests {
     TYPED_TEST_SUITE(MstAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {
-            //{"point.mtx", 0},
+            {"point.mtx", 0},
             {"test1.mtx", 22},
             {"small.mtx", 120}
             };
