@@ -34,7 +34,7 @@ namespace algos {
         }
         n = n_input;
         edges = nnz_input;
-        a = Matrix::make(n, n, spla::INT);
+        a = Matrix::make(n, n, INT);
 
         int u, v, w;
         for (int i = 0; i < nnz_input; ++i) {
@@ -80,53 +80,126 @@ namespace algos {
         return Tree{n, p, weight};
     }
 
+    void print_vector(const ref_ptr<Vector> &v, const std::string &name = "") {
+        std::cout << "-- " << name << " --\n";
+        auto sz = Scalar::make_int(0);
+        exec_v_count_mf(sz, v);
+        auto buffer_int = std::vector<int>(sz->as_int());
+        auto keys_view = MemView::make(buffer_int.data(), sz->as_int());
+        auto values_view = MemView::make(buffer_int.data(), sz->as_int());
+        v->read(keys_view, values_view);
+        auto keys = (int *) keys_view->get_buffer();
+        auto values = (int *) values_view->get_buffer();
+        for (int i = 0; i < sz->as_int(); i++) {
+            std::cout << keys[i] << ' ' << values[i] << '\n';
+        }
+    }
+
+    size_t count_nonzero_elements(const ref_ptr<Matrix>& mat) {
+        size_t count = 0;
+        const uint n_rows = mat->get_n_rows();
+        const uint n_cols = mat->get_n_cols();
+
+        for (uint i = 0; i < n_rows; ++i) {
+            for (uint j = 0; j < n_cols; ++j) {
+                int val;
+                Status status = mat->get_int(i, j, val);
+                if (status == Status::Ok && val != 0) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    void print_matrix(const ref_ptr<Matrix>& m, const std::string& name = "") {
+        std::cout << "-- " << name << " --\n";
+        int foo = count_nonzero_elements(m);
+
+        // Получаем все ненулевые элементы
+        auto buffer_int = std::vector<int>(foo);
+        auto rows_view = MemView::make(buffer_int.data(), foo);
+        auto cols_view = MemView::make(buffer_int.data(), foo);
+        auto values_view = MemView::make(buffer_int.data(), foo);
+        m->read(rows_view, cols_view, values_view);
+
+        auto rows = (int *) rows_view->get_buffer();
+        auto cols = (int *) cols_view->get_buffer();
+        auto values = (int *) values_view->get_buffer();
+
+        // Печатаем в формате "i j value"
+        for (uint i = 0; i < foo; ++i) {
+            std::cout << rows[i] << " " << cols[i] << " " << values[i] << "\n";
+        }
+    }
+
     void BoruvkaSpla::compute_() {
-        // надо еще научиться обрабатывать лес, пока что будет только дерево для связного графа
+        // Инициализация mst и веса
+        mst = Vector::make(n, INT);
+        const auto neg_one = Scalar::make_int(-1);
+        mst->set_fill_value(neg_one);
+        mst->fill_with(neg_one);
+        weight = 0;
+
         const auto parent = static_cast<int *>(malloc(sizeof(int) * n));
         for (int i = 0; i < n; i++)
             parent[i] = i;
 
         const ref_ptr<Vector> f = Vector::make(n, INT);
-    
-        while (true)
-        {
+
+        while (true) {
             update_v_parent(f, parent, n);
             auto [min_values, min_indices] = comb_min_product(f, a);
-    
-            // calculate of cedge
+            print_vector(min_values, "min_values");
+            print_vector(min_indices, "min_indices");
+
+            // Выделяем память для хранения рёбер
             auto cedge_weight = static_cast<int *>(malloc(sizeof(int) * n));
             auto cedge_j = static_cast<int *>(malloc(sizeof(int) * n));
+            auto cedge_u = static_cast<int *>(malloc(sizeof(int) * n)); // Для хранения вершины u
             for (int p = 0; p < n; p++) {
                 cedge_weight[p] = INF;
                 cedge_j[p] = -1;
+                cedge_u[p] = -1;
             }
-    
+
+            // Находим минимальные рёбра для каждой компоненты
             for (int i = 0; i < n; i++) {
-                int p = parent[i];
+                int p = find_root(parent, i);
                 int edge_weight_i, edge_j_i;
                 min_values->get_int(i, edge_weight_i);
                 min_indices->get_int(i, edge_j_i);
-            
+
                 if (edge_weight_i < cedge_weight[p]) {
                     cedge_weight[p] = edge_weight_i;
                     cedge_j[p] = edge_j_i;
+                    cedge_u[p] = i; // Сохраняем вершину i
                 }
             }
-    
-            // calculate of parent
+
+            // Объединяем компоненты и добавляем рёбра в mst
             bool changed = false;
             for (int p = 0; p < n; p++) {
                 if (parent[p] == p && cedge_j[p] != -1) {
-                    int new_parent = find_root(parent, cedge_j[p]);
-                    if (p != new_parent) {
-                        parent[p] = new_parent;
+                    const int v = cedge_j[p];
+                    if (const int root_v = find_root(parent, v); p != root_v) {
+                        const int u = cedge_u[p];
+                        mst->set_int(u, v);
+                        weight += cedge_weight[p];
+
+                        parent[p] = root_v;
                         changed = true;
                     }
                 }
             }
+
+            free(cedge_weight);
+            free(cedge_j);
+            free(cedge_u);
+
             if (!changed) break;
-    
-            // filter edges in A
+
+            // Фильтруем рёбра внутри компонент
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
                     int val;
@@ -136,10 +209,8 @@ namespace algos {
                     }
                 }
             }
-    
-            free(cedge_weight);
-            free(cedge_j);
         }
+        free(parent);
     }
 
     pair<ref_ptr<Vector>, ref_ptr<Vector>> row_min_and_argmin(const ref_ptr<Matrix> &A) {
@@ -183,14 +254,14 @@ namespace algos {
         {
             int col;
             v->get_int(row, col);
-            if (col != -1) {
-                F->set_int(row, col, 1);
-            }
+            F->set_int(row, col, 1);
         }
         ref_ptr<Scalar> zero = Scalar::make_int(0);
+        //print_matrix(F, "matrix F");
     
         ref_ptr<Matrix> W = Matrix::make(n, n, INT);
         exec_mxm(W, A, F, MULT_INT, MIN_INT, zero);
+        print_matrix(W, "matrix W");
     
         return row_min_and_argmin(W);
     }
