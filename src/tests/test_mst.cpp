@@ -2,6 +2,7 @@
 #include <filesystem>
 #include "common/mst_algorithm.hpp"
 #include "spla/prim_spla.hpp"
+#include "spla/boruvka_spla.hpp"
 
 namespace tests {
     struct GraphCase {
@@ -13,12 +14,12 @@ namespace tests {
     algos::MstAlgorithm *create_mst_algo();
 
     template<>
-    algos::MstAlgorithm *create_mst_algo<algos::PrimSpla>() {
-        return new algos::PrimSpla();
+    algos::MstAlgorithm *create_mst_algo<algos::BoruvkaSpla>() {
+        return new algos::BoruvkaSpla();
     }
 
     template<typename T>
-    class MstAlgorithmTest : public ::testing::Test {
+    class MstAlgorithmTest : public testing::Test {
     protected:
         MstAlgorithmTest() : algo(create_mst_algo<T>()) {}
 
@@ -27,7 +28,7 @@ namespace tests {
         algos::MstAlgorithm *const algo;
     };
 
-    using AlgosTypes = ::testing::Types<algos::PrimSpla>; // extend this with other MST algorimths
+    using AlgosTypes = ::testing::Types<algos::BoruvkaSpla>; // extend this with other MST algorimths
     TYPED_TEST_SUITE(MstAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {
