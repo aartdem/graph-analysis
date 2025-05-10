@@ -9,10 +9,11 @@ using namespace spla;
 
 namespace algos {
     std::pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(
-        ref_ptr<Vector> v,
-        ref_ptr<Matrix> A
+        const ref_ptr<Vector> &v,
+        const ref_ptr<Matrix> &A
     );
     int find_root(int* parent, int x);
+    void update_v_parent(ref_ptr<Vector> v, int* parent, int n);
 
     void BoruvkaSpla::load_graph(const filesystem::path &file_path) {
         ifstream input(file_path);
@@ -54,7 +55,7 @@ namespace algos {
     }
 
     using clock = chrono::steady_clock;
-    const int INF = 1e9;
+    constexpr int INF = 1e9;
 
     chrono::seconds BoruvkaSpla::compute() {
         auto start = clock::now();
@@ -81,7 +82,7 @@ namespace algos {
 
     void BoruvkaSpla::compute_() {
         // надо еще научиться обрабатывать лес, пока что будет только дерево для связного графа
-        int* parent = (int*)malloc(sizeof(int) * n);
+        auto parent = static_cast<int *>(malloc(sizeof(int) * n));
         for (int i = 0; i < n; i++)
             parent[i] = i;
     
@@ -90,15 +91,14 @@ namespace algos {
             f->set_int(i, i);
         }
     
-        while (true) // по количеству компонент
+        while (true)
         {
-            // не обновляю вектор f
-            std::pair<ref_ptr<Vector>, ref_ptr<Vector>> result = comb_min_product(f, a);
-            auto [min_values, min_indices] = result;
+            update_v_parent(f, parent, n);
+            auto [min_values, min_indices] = comb_min_product(f, a);
     
-            // calculate of cedge
-            int* cedge_weight = (int*)malloc(sizeof(int) * n);
-            int* cedge_j = (int*)malloc(sizeof(int) * n);
+            // calculate of cedge - норм ли каждый раз их тут инициализировать?
+            auto cedge_weight = static_cast<int *>(malloc(sizeof(int) * n));
+            auto cedge_j = static_cast<int *>(malloc(sizeof(int) * n));
             for (int p = 0; p < n; p++) {
                 cedge_weight[p] = INF;
                 cedge_j[p] = -1;
@@ -106,32 +106,35 @@ namespace algos {
     
             for (int i = 0; i < n; i++) {
                 int p = parent[i];
-                int cur_min = cedge_weight[p];
-                int edge_weight_i;
+                int edge_weight_i, edge_j_i;
                 min_values->get_int(i, edge_weight_i);
-                int edge_j_i;
                 min_indices->get_int(i, edge_j_i);
             
-                if (edge_weight_i < cur_min) {
+                if (edge_weight_i < cedge_weight[p]) {
                     cedge_weight[p] = edge_weight_i;
                     cedge_j[p] = edge_j_i;
                 }
             }
     
             // calculate of parent
+            bool changed = false;
             for (int p = 0; p < n; p++) {
-                if (parent[p] == p && cedge_j[p] != -1) {  // p — корень компоненты и  есть хотя бы одна компонента которая связывается с нашей
+                if (parent[p] == p && cedge_j[p] != -1) {
                     int new_parent = find_root(parent, cedge_j[p]);
-                    parent[p] = new_parent;
+                    if (p != new_parent) {
+                        parent[p] = new_parent;
+                        changed = true;
+                    }
                 }
             }
+            if (!changed) break;
     
             // filter edges in A
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
                     int val;
                     a->get_int(i, j, val);
-                    if (val != 0 && parent[i] == parent[j]) {
+                    if (val != 0 && find_root(parent, i) == find_root(parent, j)) {
                         a->set_int(i, j, 0);
                     }
                 }
@@ -176,8 +179,8 @@ namespace algos {
         return {min_values, min_indices};
     }
 
-    pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(ref_ptr<Vector> v, ref_ptr<Matrix> A) {
-        int n = v->get_n_rows();
+    pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(const ref_ptr<Vector> &v, const ref_ptr<Matrix> &A) {
+        const uint32_t n = v->get_n_rows();
         ref_ptr<Matrix> F = Matrix::make(n, n, INT);
         for (size_t row = 0; row < n; row++)
         {
@@ -195,10 +198,16 @@ namespace algos {
         return row_min_and_argmin(W);
     }
 
-    int find_root(int* parent, int x) {
+    int find_root(int *parent, int x) {
         if (parent[x] != x) {
             parent[x] = find_root(parent, parent[x]);
         }
         return parent[x];
+    }
+
+    void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n) {
+        for (int i = 0; i < n; ++i) {
+            f->set_int(i, find_root(parent, i));
+        }
     }
 }
