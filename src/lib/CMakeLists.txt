@@ -10,8 +10,8 @@ set(SPLA_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/spla")
 
 add_library(algos_lib STATIC ${LIB_SOURCES})
 set_target_properties(algos_lib PROPERTIES
-  CUDA_EXTENDED_LAMBDA       ON
   CUDA_SEPARABLE_COMPILATION ON
+  POSITION_INDEPENDENT_CODE ON
 )
 
 set(SPLA_BUILD_TESTS OFF CACHE BOOL "Disable building of Spla unit tests" FORCE)
