@@ -13,7 +13,7 @@ namespace algos {
         const ref_ptr<Matrix> &A
     );
     int find_root(int* parent, int x);
-    void update_v_parent(ref_ptr<Vector> v, int* parent, int n);
+    void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n);
 
     void BoruvkaSpla::load_graph(const filesystem::path &file_path) {
         ifstream input(file_path);
@@ -58,22 +58,22 @@ namespace algos {
     constexpr int INF = 1e9;
 
     chrono::seconds BoruvkaSpla::compute() {
-        auto start = clock::now();
+        const auto start = clock::now();
         compute_();
-        auto end = clock::now();
+        const auto end = clock::now();
         return chrono::duration_cast<chrono::seconds>(end - start);
     }
 
     Tree BoruvkaSpla::get_result() {
-        auto sparse_sz = Scalar::make_uint(0);
+        const auto sparse_sz = Scalar::make_uint(0);
         auto buffer_int = vector<int>(n);
-        vector<int> p(n, -1);
+        vector p(n, -1);
         exec_v_count_mf(sparse_sz, mst);
         auto keys_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
         auto values_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
         mst->read(keys_view, values_view);
-        auto keys = (int *) keys_view->get_buffer();
-        auto values = (int *) values_view->get_buffer();
+        const auto keys = static_cast<int *>(keys_view->get_buffer());
+        const auto values = static_cast<int *>(values_view->get_buffer());
         for (int i = 0; i < sparse_sz->as_int(); i++) {
             p[keys[i]] = values[i];
         }
@@ -82,21 +82,18 @@ namespace algos {
 
     void BoruvkaSpla::compute_() {
         // надо еще научиться обрабатывать лес, пока что будет только дерево для связного графа
-        auto parent = static_cast<int *>(malloc(sizeof(int) * n));
+        const auto parent = static_cast<int *>(malloc(sizeof(int) * n));
         for (int i = 0; i < n; i++)
             parent[i] = i;
-    
-        ref_ptr<Vector> f = Vector::make(n, INT);
-        for (int i = 0; i < n; ++i) {
-            f->set_int(i, i);
-        }
+
+        const ref_ptr<Vector> f = Vector::make(n, INT);
     
         while (true)
         {
             update_v_parent(f, parent, n);
             auto [min_values, min_indices] = comb_min_product(f, a);
     
-            // calculate of cedge - норм ли каждый раз их тут инициализировать?
+            // calculate of cedge
             auto cedge_weight = static_cast<int *>(malloc(sizeof(int) * n));
             auto cedge_j = static_cast<int *>(malloc(sizeof(int) * n));
             for (int p = 0; p < n; p++) {
@@ -145,7 +142,7 @@ namespace algos {
         }
     }
 
-    pair<ref_ptr<Vector>, ref_ptr<Vector>> row_min_and_argmin(ref_ptr<Matrix> A) {
+    pair<ref_ptr<Vector>, ref_ptr<Vector>> row_min_and_argmin(const ref_ptr<Matrix> &A) {
         const uint n_rows = A->get_n_rows();
         const uint n_cols = A->get_n_cols();
 
