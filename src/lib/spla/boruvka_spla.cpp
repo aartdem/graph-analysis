@@ -64,11 +64,13 @@ namespace algos {
         const auto end = clock::now();
         return chrono::duration_cast<chrono::seconds>(end - start);
     }
+    void print_vector(const ref_ptr<Vector> &v, const std::string &name);
 
     Tree BoruvkaSpla::get_result() {
-        const auto sparse_sz = Scalar::make_uint(0);
+        const auto sparse_sz = Scalar::make_int(0);
         auto buffer_int = vector<int>(n);
         vector p(n, -1);
+        print_vector(mst, "mst");
         exec_v_count_mf(sparse_sz, mst);
         auto keys_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
         auto values_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
@@ -135,150 +137,153 @@ namespace algos {
     }
 
     void BoruvkaSpla::compute_() {
-        // Инициализация mst и веса
+        // Initialize MST and weight
         mst = Vector::make(n, INT);
         const auto neg_one = Scalar::make_int(-1);
         mst->set_fill_value(neg_one);
-        mst->fill_with(neg_one);
         weight = 0;
 
+        // Initialize parent array for union-find
         const auto parent = static_cast<int *>(malloc(sizeof(int) * n));
         for (int i = 0; i < n; i++)
             parent[i] = i;
 
+        // Component vector
         const ref_ptr<Vector> f = Vector::make(n, INT);
+        const auto inf_scalar = Scalar::make_int(INF);
 
         while (true) {
+            // Update component IDs using vector operation
             update_v_parent(f, parent, n);
+
+            // Find minimum outgoing edge for each vertex using matrix operations
             auto [min_values, min_indices] = comb_min_product(f, a);
 
-            // Выделяем память для хранения рёбер
-            auto cedge_weight = static_cast<int *>(malloc(sizeof(int) * n));
-            auto cedge_j = static_cast<int *>(malloc(sizeof(int) * n));
-            auto cedge_u = static_cast<int *>(malloc(sizeof(int) * n)); // Для хранения вершины u
-            for (int p = 0; p < n; p++) {
-                cedge_weight[p] = INF;
-                cedge_j[p] = -1;
-                cedge_u[p] = -1;
-            }
-
-            // Находим минимальные рёбра для каждой компоненты
-            for (int i = 0; i < n; i++) {
-                int p = find_root(parent, i);
-                int edge_weight_i, edge_j_i;
-                min_values->get_int(i, edge_weight_i);
-                min_indices->get_int(i, edge_j_i);
-
-                if (edge_weight_i < cedge_weight[p]) {
-                    cedge_weight[p] = edge_weight_i;
-                    cedge_j[p] = edge_j_i;
-                    cedge_u[p] = i; // Сохраняем вершину i
-                }
-            }
-
-            // Объединяем компоненты и добавляем рёбра в mst
+            // Track if the MST changed in this iteration
             bool changed = false;
-            for (int p = 0; p < n; p++) {
-                if (parent[p] == p && cedge_j[p] != -1) {
-                    const int v = cedge_j[p];
-                    if (const int root_v = find_root(parent, v); p != root_v) {
-                        const int u = cedge_u[p];
-                        mst->set_int(u, v);
-                        weight += cedge_weight[p];
 
-                        parent[p] = root_v;
-                        changed = true;
+            // Process component edges - use vector of pairs to collect results
+            std::vector<std::tuple<int, int, int>> edges_to_add;
+
+            // Create component edge tracking arrays
+            exec_callback([&]() {
+                // Arrays for tracking best edge per component
+                std::vector<int> cedge_weight(n, INF);
+                std::vector<int> cedge_j(n, -1);
+                std::vector<int> cedge_u(n, -1);
+
+                // Find minimum outgoing edge for each component
+                for (int i = 0; i < n; i++) {
+                    int p = find_root(parent, i);
+                    int edge_weight_i, edge_j_i;
+                    min_values->get_int(i, edge_weight_i);
+                    min_indices->get_int(i, edge_j_i);
+
+                    if (edge_j_i != -1 && edge_weight_i < cedge_weight[p]) {
+                        cedge_weight[p] = edge_weight_i;
+                        cedge_j[p] = edge_j_i;
+                        cedge_u[p] = i;
                     }
                 }
+
+                // Add edges to MST and merge components
+                for (int p = 0; p < n; p++) {
+                    if (parent[p] == p && cedge_j[p] != -1) {
+                        const int v = cedge_j[p];
+                        const int root_v = find_root(parent, v);
+                        if (p != root_v) {
+                            const int u = cedge_u[p];
+                            edges_to_add.push_back({u, v, cedge_weight[p]});
+                            parent[p] = root_v;
+                            changed = true;
+                        }
+                    }
+                }
+
+                return Status::Ok;
+            });
+
+            // Update MST with new edges
+            for (const auto& [u, v, w] : edges_to_add) {
+                mst->set_int(u, v);
+                weight += w;
             }
 
-            free(cedge_weight);
-            free(cedge_j);
-            free(cedge_u);
-
+            // If no changes were made, algorithm is complete
             if (!changed) break;
-
-            // Фильтруем рёбра внутри компонент
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < n; j++) {
-                    int val;
-                    a->get_int(i, j, val);
-                    if (val != 0 && find_root(parent, i) == find_root(parent, j)) {
-                        a->set_int(i, j, 0);
-                    }
-                }
-            }
         }
+
         free(parent);
     }
 
-    pair<ref_ptr<Vector>, ref_ptr<Vector>> row_min_and_argmin(const ref_ptr<Matrix> &A) {
-        const uint n_rows = A->get_n_rows();
-        const uint n_cols = A->get_n_cols();
+    pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(
+        const ref_ptr<Vector> &v,
+        const ref_ptr<Matrix> &A) {
 
-        ref_ptr<Vector> min_values = Vector::make(n_rows, INT);
-        ref_ptr<Vector> min_indices = Vector::make(n_rows, INT);
+        const uint32_t n = v->get_n_rows();
+        const auto inf_scalar = Scalar::make_int(INF);
 
-#pragma omp parallel for
-        for (uint i = 0; i < n_rows; i++) {
-            int min_val = INF;
-            int min_idx = -1;
+        // Create result vectors
+        ref_ptr<Vector> min_values = Vector::make(n, INT);
+        min_values->set_fill_value(inf_scalar);
+        ref_ptr<Vector> min_indices = Vector::make(n, INT);
+        min_indices->set_fill_value(Scalar::make_int(-1));
 
-            for (uint j = 0; j < n_cols; j++) {
-                int val;
-                Status status = A->get_int(i, j, val);
+        // Create temp matrix for filtered edges
+        auto filtered_A = Matrix::make(n, n, INT);
+        filtered_A->set_fill_value(Scalar::make_int(0));
 
-                if (status == Status::Ok && val != 0.0f && val < min_val) { // фильтрация что в разных компонентах?
-                    min_val = val;
-                    min_idx = j;
+        // Step 1: Filter edges - keep only edges between different components
+        exec_callback([&]() {
+            // Extract component IDs
+            vector<int> component(n);
+            for (uint i = 0; i < n; i++) {
+                v->get_int(i, component[i]);
+            }
+
+            // Create filtered matrix with only cross-component edges
+            for (uint i = 0; i < n; i++) {
+                for (uint j = 0; j < n; j++) {
+                    int edge_weight;
+                    Status status = A->get_int(i, j, edge_weight);
+
+                    // Only keep edges between different components
+                    if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
+                        filtered_A->set_int(i, j, edge_weight);
+                    }
                 }
             }
+            return Status::Ok;
+        });
 
-            if (min_idx >= 0) {
-                min_values->set_int(i, min_val);
-                min_indices->set_int(i, min_idx);
-            } else {
-                min_values->set_int(i, INF);
-                min_indices->set_int(i, -1);
+        // Step 2: Use matrix row reduction to find minimum weight per vertex
+        exec_m_reduce_by_row(min_values, filtered_A, MIN_INT, inf_scalar);
+
+        // Step 3: Find the indices of minimum elements
+        exec_callback([&]() {
+            for (uint i = 0; i < n; i++) {
+                int min_val;
+                min_values->get_int(i, min_val);
+
+                // Skip if no outgoing edges (INF value)
+                if (min_val == INF) {
+                    continue;
+                }
+
+                // Find the column index with this minimum value
+                for (uint j = 0; j < n; j++) {
+                    int val;
+                    Status status = filtered_A->get_int(i, j, val);
+                    if (status == Status::Ok && val == min_val) {
+                        min_indices->set_int(i, j);
+                        break;
+                    }
+                }
             }
-        }
+            return Status::Ok;
+        });
 
         return {min_values, min_indices};
-    }
-
-    pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(const ref_ptr<Vector> &v, const ref_ptr<Matrix> &A) {
-        const uint32_t n = v->get_n_rows();
-
-        // Создаём временную матрицу, где нули заменены на INF
-        ref_ptr<Matrix> A_temp = Matrix::make(n, n, INT);
-        for (uint i = 0; i < n; i++) {
-            for (uint j = 0; j < n; j++) {
-                int val;
-                Status status = A->get_int(i, j, val);
-                if (status == Status::Ok && val != 0) {
-                    A_temp->set_int(i, j, val);  // Сохраняем ненулевые значения
-                } else {
-                    A_temp->set_int(i, j, INF);  // Заменяем нули на INF
-                }
-            }
-        }
-
-        // Строим матрицу F как и раньше
-        ref_ptr<Matrix> F = Matrix::make(n, n, INT);
-        for (size_t row = 0; row < n; row++) {
-            int col;
-            v->get_int(row, col);
-            F->set_int(row, col, 1);
-        }
-
-        // Правильное использование INF как начального значения для умножения
-        ref_ptr<Scalar> inf_scalar = Scalar::make_int(INF);
-        ref_ptr<Matrix> W = Matrix::make(n, n, INT);
-
-        // Выполняем умножение матриц с операциями MULT_INT и MIN_INT
-        exec_mxm(W, A_temp, F, MULT_INT, MIN_INT, inf_scalar);
-
-        return row_min_and_argmin(W);
     }
 
 
