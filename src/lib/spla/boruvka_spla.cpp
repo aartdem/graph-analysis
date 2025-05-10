@@ -8,6 +8,7 @@ using namespace std;
 using namespace spla;
 
 namespace algos {
+
     using clock = chrono::steady_clock;
     constexpr int INF = 1e9;
 
@@ -31,7 +32,6 @@ namespace algos {
         n = n_input;
         edges = nnz_input;
         a = Matrix::make(n, n, INT);
-        //a->set_fill_value(Scalar::make_int(INF));
 
         int u, v, w;
         for (int i = 0; i < nnz_input; ++i) {
@@ -126,12 +126,73 @@ namespace algos {
         }
     }
 
-    std::pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(
+    int find_root(int *parent, int x) {
+        if (parent[x] != x) {
+            parent[x] = find_root(parent, parent[x]);
+        }
+        return parent[x];
+    }
+
+    void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n) {
+        for (int i = 0; i < n; ++i) {
+            f->set_int(i, find_root(parent, i));
+        }
+    }
+
+    pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(
         const ref_ptr<Vector> &v,
-        const ref_ptr<Matrix> &A
-    );
-    int find_root(int* parent, int x);
-    void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n);
+        const ref_ptr<Matrix> &A) {
+
+        const uint32_t n = v->get_n_rows();
+        const auto inf_scalar = Scalar::make_int(INF);
+
+        ref_ptr<Vector> min_values = Vector::make(n, INT);
+        min_values->set_fill_value(inf_scalar);
+        ref_ptr<Vector> min_indices = Vector::make(n, INT);
+        min_indices->set_fill_value(Scalar::make_int(-1));
+
+        auto filtered_A = Matrix::make(n, n, INT);
+        filtered_A->set_fill_value(Scalar::make_int(0));
+
+        vector<int> component(n);
+        for (uint i = 0; i < n; i++) {
+            v->get_int(i, component[i]);
+        }
+
+        for (uint i = 0; i < n; i++) {
+            for (uint j = 0; j < n; j++) {
+                int edge_weight;
+                Status status = A->get_int(i, j, edge_weight);
+
+                if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
+                    filtered_A->set_int(i, j, edge_weight);
+                }
+            }
+        }
+
+        // Search for Minimum Weight for Each Vertex
+        exec_m_reduce_by_row(min_values, filtered_A, MIN_INT, inf_scalar);
+
+        for (uint i = 0; i < n; i++) {
+            int min_val;
+            min_values->get_int(i, min_val);
+
+            if (min_val == INF) {
+                continue;
+            }
+
+            for (uint j = 0; j < n; j++) {
+                int val;
+                Status status = filtered_A->get_int(i, j, val);
+                if (status == Status::Ok && val == min_val) {
+                    min_indices->set_int(i, j);
+                    break;
+                }
+            }
+        }
+
+        return {min_values, min_indices};
+    }
 
     void BoruvkaSpla::compute_() {
         mst = Vector::make(n, INT);
@@ -192,78 +253,5 @@ namespace algos {
         }
 
         free(parent);
-    }
-
-    pair<ref_ptr<Vector>, ref_ptr<Vector>> comb_min_product(
-        const ref_ptr<Vector> &v,
-        const ref_ptr<Matrix> &A) {
-
-        const uint32_t n = v->get_n_rows();
-        const auto inf_scalar = Scalar::make_int(INF);
-
-        ref_ptr<Vector> min_values = Vector::make(n, INT);
-        min_values->set_fill_value(inf_scalar);
-        ref_ptr<Vector> min_indices = Vector::make(n, INT);
-        min_indices->set_fill_value(Scalar::make_int(-1));
-
-        auto filtered_A = Matrix::make(n, n, INT);
-        filtered_A->set_fill_value(Scalar::make_int(0));
-
-        vector<int> component(n);
-        for (uint i = 0; i < n; i++) {
-            v->get_int(i, component[i]);
-        }
-
-        for (uint i = 0; i < n; i++) {
-            for (uint j = 0; j < n; j++) {
-                int edge_weight;
-                Status status = A->get_int(i, j, edge_weight);
-
-                if (status == Status::Ok && edge_weight != 0 && component[i] != component[j]) {
-                    filtered_A->set_int(i, j, edge_weight);
-                }
-            }
-        }
-
-        // Search for Minimum Weight for Each Vertex
-        exec_m_reduce_by_row(min_values, filtered_A, MIN_INT, inf_scalar);
-
-        for (uint i = 0; i < n; i++) {
-            int min_val;
-            min_values->get_int(i, min_val);
-
-            if (min_val == INF) {
-                continue;
-            }
-
-            for (uint j = 0; j < n; j++) {
-                int val;
-                Status status = filtered_A->get_int(i, j, val);
-                if (status == Status::Ok && val == min_val) {
-                    min_indices->set_int(i, j);
-                    break;
-                }
-            }
-        }
-
-        return {min_values, min_indices};
-    }
-
-
-    int find_root(int *parent, int x) {
-        if (parent[x] != x) {
-            parent[x] = find_root(parent, parent[x]);
-        }
-        return parent[x];
-    }
-
-    void update_v_parent(const ref_ptr<Vector> &f, int* parent, int n) {
-        for (int i = 0; i < n; ++i) {
-            f->set_int(i, find_root(parent, i));
-        }
-
-        for (int i = 0; i < n; ++i) {
-            f->set_int(i, parent[i]);
-        }
     }
 }
