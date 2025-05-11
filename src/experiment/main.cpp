@@ -4,10 +4,10 @@
 #include "spla/library_spla.hpp"
 
 int main() {
-//    auto file_unweighted = std::filesystem::path(DATA_DIR) / "unweighted.mtx";
-    auto file = std::filesystem::path(DATA_DIR) / "test1.mtx";
-    auto algo = std::make_unique<algos::BoruvkaSpla>();
     algos::initialize_spla();
+//    auto file_unweighted = std::filesystem::path(DATA_DIR) / "unweighted.mtx";
+    auto file = std::filesystem::path(DATA_DIR) / "Trefethen_2000.mtx";
+    auto algo = std::make_unique<algos::PrimSpla>();
     algo->load_graph(file);
     auto t = algo->compute();
     std::cout << "time: " << t.count() << '\n';

@@ -18,7 +18,7 @@ namespace algos {
 
         std::pair<float, int> get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec);
 
-        void copy_vector(const spla::ref_ptr<spla::Vector> &from, const spla::ref_ptr<spla::Vector> &to);
+//        void copy_vector(const spla::ref_ptr<spla::Vector> &from, const spla::ref_ptr<spla::Vector> &to);
 
         void print_vector(const spla::ref_ptr<spla::Vector> &vec, const std::string &name);
 

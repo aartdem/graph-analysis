@@ -89,22 +89,15 @@ namespace algos {
 //    }
 
     std::pair<float, int> PrimSpla::get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) {
-        auto sparse_sz = spla::Scalar::make_uint(0);
-        spla::exec_v_count_mf(sparse_sz, vec);
-        int sz = sparse_sz->as_int();
-        auto keys_view = spla::MemView::make(buffer_int.data(), sz);
-        auto values_view = spla::MemView::make(buffer_float.data(), sz);
-        vec->read(keys_view, values_view);
-        auto keys = (int *) keys_view->get_buffer();
-        auto values = (float *) values_view->get_buffer();
         int v = 0;
         float min_dist;
         vec->get_float(v, min_dist);
-        for (int i = 0; i < sz; i++) {
-            float dist = values[i];
+        for (int i = 1; i < n; i++) {
+            float dist;
+            vec->get_float(i, dist);
             if (dist < min_dist) {
                 min_dist = dist;
-                v = keys[i];
+                v = i;
             }
         }
         return {min_dist, v};
