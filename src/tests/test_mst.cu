@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include <filesystem>
 #include "common/mst_algorithm.hpp"
 #include "spla/boruvka_spla.hpp"
 #include "spla/prim_spla.hpp"
+#include "gunrock/boruvka.hxx"
 
 namespace tests {
     struct GraphCase {
@@ -62,6 +62,12 @@ namespace tests {
         return new algos::BoruvkaSpla();
     }
 
+    template<>
+    algos::MstAlgorithm *create_mst_algo<algos::BoruvkaGunrock>() {
+        return new algos::BoruvkaGunrock();
+    }
+
+
     template<typename T>
     class MstAlgorithmTest : public ::testing::Test {
     protected:
@@ -72,7 +78,7 @@ namespace tests {
         algos::MstAlgorithm *const algo;
     };
 
-    using AlgosTypes = ::testing::Types<algos::PrimSpla, algos::BoruvkaSpla>; // extend this with other MST algorimths
+    using AlgosTypes = ::testing::Types<algos::PrimSpla, algos::BoruvkaSpla, algos::BoruvkaGunrock>; // extend this with other MST algorimths
     TYPED_TEST_SUITE(MstAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {

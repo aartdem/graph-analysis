@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.24)
 find_package(CUDAToolkit REQUIRED)
 set(CMAKE_CUDA_ARCHITECTURES 86 CACHE STRING "RTX 50-series")
 
-project(algos_lib LANGUAGES CXX CUDA)
+project(algos_lib LANGUAGES CXX CUDA C)
 set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --extended-lambda -DSM_TARGET=70")
 
 set(CMAKE_CXX_STANDARD            20)
@@ -29,7 +29,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/gunrock/gunrock.git
   GIT_TAG        main          
 )
-#set(ESSENTIALS_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
+set(ESSENTIALS_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
 set(ESSENTIALS_BUILD_TESTS     OFF CACHE BOOL "" FORCE)
 set(ESSENTIALS_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
 set(GUNROCK_DOWNLOAD_DEPENDENCIES ON CACHE BOOL "")
@@ -37,4 +37,4 @@ set(GUNROCK_DOWNLOAD_DEPENDENCIES ON CACHE BOOL "")
 add_subdirectory(deps/gunrock EXCLUDE_FROM_ALL)
 add_subdirectory(src/lib)
 add_subdirectory(src/tests)
-add_subdirectory(src/experiment)
+add_subdirectory(src/lib/experiment)

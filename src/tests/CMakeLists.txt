@@ -25,4 +25,7 @@ target_link_libraries(${BINARY} algos_lib GTest::gtest_main)
 # make relative path of data directory (DATA_DIR) accessed in tests
 target_compile_definitions(${BINARY} PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/data")
 
-gtest_discover_tests(${BINARY})
+add_test(NAME algos_lib_tests
+           COMMAND ${BINARY}
+           WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/data
+  )

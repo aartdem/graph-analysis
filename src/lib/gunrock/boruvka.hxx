@@ -1,12 +1,8 @@
-// boruvka_gunrock.hpp
 #pragma once
 
-#include "common/mst_algorithm.hpp"
-#include "common/tree.hpp"
-#include <chrono>
-#include <cuda_runtime.h> // даёт определения threadIdx, blockIdx, blockDim, gridDim
+#include <cuda_runtime.h> // defines threadIdx, blockIdx, blockDim, gridDim
 #include <device_launch_parameters.h>
-#include <gunrock/algorithms/algorithms.hxx> // Gunrock core (включает необходимые заголовки)
+#include <gunrock/algorithms/algorithms.hxx> // Gunrock core
 #include <thrust/copy.h>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -15,6 +11,9 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include "common/mst_algorithm.hpp"
+#include "common/tree.hpp"
+
 namespace algos {
 
 class BoruvkaGunrock : public MstAlgorithm {
@@ -22,36 +21,38 @@ class BoruvkaGunrock : public MstAlgorithm {
   using edge_t = int;
   using weight_t = float;
 
-  // Поля для хранения графа
+  // Graph data
   vertex_t num_vertices;
   edge_t num_edges;
-  thrust::device_vector<vertex_t>
-      d_src; // массив номеров исходных вершин для каждого ребра (device)
-  thrust::device_vector<vertex_t>
-      d_dst; // массив номеров конечных вершин для каждого ребра
-  thrust::device_vector<weight_t> d_weight; // массив весов ребер
+  thrust::device_vector<vertex_t> d_src;    // source vertex array (device)
+  thrust::device_vector<vertex_t> d_dst;    // destination vertex array (device)
+  thrust::device_vector<weight_t> d_weight; // edge weights (device)
 
-  // Результат: список рёбер MST (на хосте)
+  // MST result: list of edges (host)
   std::vector<std::tuple<vertex_t, vertex_t, weight_t>> mst_edges;
 
 public:
-  // Вспомогательные структуры для редукции
+  // Helper struct for reduction
   struct EdgePair {
     weight_t w;
     edge_t idx;
   };
-  // Функтор для сравнения EdgePair по весу (для редукции минимума)
+
+  // Compare by weight (min reduction)
   struct MinEdgeOp {
     __host__ __device__ EdgePair operator()(const EdgePair &a,
                                             const EdgePair &b) const {
       return (a.w <= b.w) ? a : b;
     }
   };
-  // Загрузка графа из файла в формате Matrix Market (MTX)
+
+  // Load graph from Matrix Market file
   void load_graph(const std::filesystem::path &file_path) override;
-  // Основной метод вычисления MST
+
+  // Compute MST and return duration
   std::chrono::seconds compute() override;
-  // Возвращает результат в формате Tree
+
+  // Build result tree
   Tree get_result() override;
 };
 
