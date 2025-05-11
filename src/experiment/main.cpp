@@ -91,6 +91,7 @@ void save_results_to_csv(const vector<BenchmarkResult>& results, const string& o
 }
 
 int main() {
+<<<<<<< HEAD
     cout << "MST Algorithms Benchmark" << endl;
 
 #if USE_GUNROCK
@@ -154,4 +155,16 @@ int main() {
     save_results_to_csv(all_results, output_file);
 
     return 0;
+=======
+    algos::initialize_spla();
+//    auto file_unweighted = std::filesystem::path(DATA_DIR) / "unweighted.mtx";
+    auto file = std::filesystem::path(DATA_DIR) / "Trefethen_2000.mtx";
+    auto algo = std::make_unique<algos::PrimSpla>();
+    algo->load_graph(file);
+    auto t = algo->compute();
+    std::cout << "time: " << t.count() << '\n';
+    auto res = algo->get_result();
+    std::cout << "weight: " << res.weight << '\n';
+    algos::finalize_spla();
+>>>>>>> 5c7de3b (fix spla)
 }
