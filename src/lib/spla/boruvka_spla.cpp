@@ -65,10 +65,16 @@ namespace algos {
     Tree BoruvkaSpla::get_result() {
         const auto sparse_sz = Scalar::make_int(0);
         vector p(n, -1);
+        ref_ptr<Vector> zero_vec = Vector::make(n, FLOAT);
+        zero_vec->fill_with(spla::Scalar::make_float(0));
+        auto mst1 = Vector::make(n, FLOAT);
+        mst1->set_fill_value(spla::Scalar::make_float(-1));
+        mst1->fill_with(spla::Scalar::make_float(-1));
+        exec_v_eadd(mst1, mst, zero_vec, spla::PLUS_FLOAT);
         exec_v_count_mf(sparse_sz, mst);
         auto keys_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
         auto values_view = MemView::make(buffer_float.data(), sparse_sz->as_int());
-        mst->read(keys_view, values_view);
+        mst1->read(keys_view, values_view);
         const auto keys = static_cast<int *>(keys_view->get_buffer());
         const auto values = static_cast<float *>(values_view->get_buffer());
         for (int i = 0; i < sparse_sz->as_int(); i++) {
