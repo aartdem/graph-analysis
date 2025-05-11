@@ -20,7 +20,7 @@ set(SPLA_BUILD_OPENCL OFF CACHE BOOL "Build library with opencl backend" FORCE)
 
 add_subdirectory(${SPLA_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/spla EXCLUDE_FROM_ALL)
 
-target_include_directories(algos_lib PUBLIC 
+target_include_directories(algos_lib PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR} 
   ${CMAKE_SOURCE_DIR}/deps/gunrock/include
   ${CUDAToolkit_INCLUDE_DIRS} 

@@ -1,7 +1,45 @@
 
 #include "boruvka.hxx"
+#include <cuda_runtime.h> // defines threadIdx, blockIdx, blockDim, gridDim
+#include <device_launch_parameters.h>
+#include <gunrock/algorithms/algorithms.hxx> // Gunrock core
+#include <thrust/copy.h>
+#include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
+#include <thrust/reduce.h>
+#include <thrust/remove.h>
+#include <thrust/sort.h>
+#include <thrust/unique.h>
 
 namespace algos {
+struct BoruvkaGunrock::DeviceData {
+  using vertex_t = BoruvkaGunrock::vertex_t;
+  using edge_t = BoruvkaGunrock::edge_t;
+  using weight_t = BoruvkaGunrock::weight_t;
+
+  thrust::device_vector<vertex_t> d_src, d_dst;
+  thrust::device_vector<weight_t> d_weight;
+
+  DeviceData() = default;
+};
+
+struct BoruvkaGunrock::EdgePair {
+  weight_t w;
+  edge_t idx;
+};
+
+struct BoruvkaGunrock::MinEdgeOp {
+  __host__ __device__ EdgePair operator()(EdgePair const &a,
+                                          EdgePair const &b) const {
+    return (a.w <= b.w) ? a : b;
+  }
+};
+
+BoruvkaGunrock::BoruvkaGunrock()
+    : num_vertices(0), num_edges(0), dev_(new DeviceData()) {}
+
+BoruvkaGunrock::~BoruvkaGunrock() = default;
+
 void BoruvkaGunrock::load_graph(const std::filesystem::path &file_path) {
   using namespace gunrock;
   io::matrix_market_t<vertex_t, edge_t, weight_t> mm;
@@ -44,9 +82,9 @@ void BoruvkaGunrock::load_graph(const std::filesystem::path &file_path) {
   num_edges = static_cast<edge_t>(h_src.size());
 
   // Copy to GPU
-  d_src = h_src;
-  d_dst = h_dst;
-  d_weight = h_weight;
+  dev_->d_src = h_src;
+  dev_->d_dst = h_dst;
+  dev_->d_weight = h_weight;
 }
 
 std::chrono::seconds BoruvkaGunrock::compute() {
@@ -75,9 +113,9 @@ std::chrono::seconds BoruvkaGunrock::compute() {
     // Each edge (u,v) adds two entries—one for u’s comp, one for v’s.
     // If both ends share a comp, mark entry invalid (key = -1).
     vertex_t *comp_ptr = thrust::raw_pointer_cast(comp.data());
-    vertex_t *src_ptr = thrust::raw_pointer_cast(d_src.data());
-    vertex_t *dst_ptr = thrust::raw_pointer_cast(d_dst.data());
-    weight_t *w_ptr = thrust::raw_pointer_cast(d_weight.data());
+    vertex_t *src_ptr = thrust::raw_pointer_cast(dev_->d_src.data());
+    vertex_t *dst_ptr = thrust::raw_pointer_cast(dev_->d_dst.data());
+    weight_t *w_ptr = thrust::raw_pointer_cast(dev_->d_weight.data());
     vertex_t *keys_ptr = thrust::raw_pointer_cast(keys.data());
     EdgePair *vals_ptr = thrust::raw_pointer_cast(vals.data());
     edge_t m = num_edges;
@@ -218,8 +256,8 @@ std::chrono::seconds BoruvkaGunrock::compute() {
       weight_t w = out_vals_host[i].w;
 
       // After the final comp update, u and v are in the same component
-      vertex_t u = (vertex_t)d_src[e];
-      vertex_t v = (vertex_t)d_dst[e];
+      vertex_t u = (vertex_t)dev_->d_src[e];
+      vertex_t v = (vertex_t)dev_->d_dst[e];
       if (!edge_used[e]) {
         edge_used[e] = 1;
         mst_edges.emplace_back(u, v, w);
