@@ -31,5 +31,6 @@ namespace algos {
         spla::ref_ptr<spla::Vector> mst;
         std::vector<int> buffer_int;
         std::vector<float> buffer_float;
+        spla::ref_ptr<spla::Vector> zero_vec;
     };
 }

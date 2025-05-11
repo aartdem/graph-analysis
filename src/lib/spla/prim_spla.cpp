@@ -26,6 +26,8 @@ namespace algos {
         n = n_input;
         buffer_int = std::vector<int>(n);
         buffer_float = std::vector<float>(n);
+        zero_vec = spla::Vector::make(n, spla::FLOAT);
+        zero_vec->fill_with(spla::Scalar::make_float(0));
         edges_count = nnz_input;
         a = spla::Matrix::make(n, n, spla::FLOAT);
         a->set_fill_value(spla::Scalar::make_float(PROCESSED));
@@ -33,6 +35,9 @@ namespace algos {
         int u, v;
         float w;
         for (int i = 0; i < nnz_input; ++i) {
+            if (i % 1000000 == 0) {
+                std::cout << "readed: " << i << '\n';
+            }
             input >> u >> v >> w;
             u--;
             v--;
@@ -73,15 +78,15 @@ namespace algos {
         return std::chrono::duration_cast<std::chrono::seconds>(end - start);
     }
 
-    void PrimSpla::copy_vector(const spla::ref_ptr<spla::Vector> &from, const spla::ref_ptr<spla::Vector> &to) {
-        auto sparse_sz = spla::Scalar::make_uint(0);
-        spla::exec_v_count_mf(sparse_sz, from);
-        int sz = sparse_sz->as_int();
-        auto keys_view = spla::MemView::make(buffer_int.data(), sz);
-        auto values_view = spla::MemView::make(buffer_float.data(), sz);
-        from->read(keys_view, values_view);
-        to->build(keys_view, values_view);
-    }
+//    void PrimSpla::copy_vector(const spla::ref_ptr<spla::Vector> &from, const spla::ref_ptr<spla::Vector> &to) {
+//        auto sparse_sz = spla::Scalar::make_uint(0);
+//        spla::exec_v_count_mf(sparse_sz, from);
+//        int sz = sparse_sz->as_int();
+//        auto keys_view = spla::MemView::make(buffer_int.data(), sz);
+//        auto values_view = spla::MemView::make(buffer_float.data(), sz);
+//        from->read(keys_view, values_view);
+//        to->build(keys_view, values_view);
+//    }
 
     std::pair<float, int> PrimSpla::get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) {
         auto sparse_sz = spla::Scalar::make_uint(0);
@@ -132,7 +137,10 @@ namespace algos {
             return;
         }
         for (int i = 0; i < n; i++) {
-            copy_vector(d, d_modified);
+            if (i % 100 == 0) {
+                std::cout << i << '\n';
+            }
+            exec_v_eadd(d_modified, d, zero_vec, spla::PLUS_FLOAT);
             spla::exec_v_assign_masked(d_modified, d, processed, spla::SECOND_FLOAT, spla::EQZERO_FLOAT);
             auto [min_dist, v] = get_min_with_arg(d_modified);
             if (min_dist < NOT_PROCESSED) {
@@ -153,10 +161,14 @@ namespace algos {
     Tree PrimSpla::get_result() {
         auto sparse_sz = spla::Scalar::make_uint(0);
         std::vector<int> p(n, -1);
+        auto mst1 = spla::Vector::make(n, spla::FLOAT);
+        mst1->set_fill_value(spla::Scalar::make_float(-1));
+        mst1->fill_with(spla::Scalar::make_float(-1));
+        exec_v_eadd(mst1, mst, zero_vec, spla::PLUS_FLOAT);
         spla::exec_v_count_mf(sparse_sz, mst);
         auto keys_view = spla::MemView::make(buffer_int.data(), sparse_sz->as_int());
         auto values_view = spla::MemView::make(buffer_float.data(), sparse_sz->as_int());
-        mst->read(keys_view, values_view);
+        mst1->read(keys_view, values_view);
         auto keys = (int *) keys_view->get_buffer();
         auto values = (float *) values_view->get_buffer();
         for (int i = 0; i < sparse_sz->as_int(); i++) {
