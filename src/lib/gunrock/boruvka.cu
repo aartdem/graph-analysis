@@ -42,27 +42,29 @@ step1_kernel(int m,         // number of edges
              int *src_ptr,  // src array,  length = m
              int *dst_ptr,  // dst array,  length = m
              float *w_ptr,  // weight array,length = m
-             int *keys_ptr, // keys array, length = m
-             BoruvkaGunrock::EdgePair *vals_ptr) // vals array, length = m
+             int *keys_ptr, // keys array, length = 2*m
+             BoruvkaGunrock::EdgePair *vals_ptr) // vals array, length = 2*m
 {
-    int e = blockIdx.x * blockDim.x + threadIdx.x;
-  if (e >= m) return;
+  int e = blockIdx.x * blockDim.x + threadIdx.x;
+  if (e >= m)
+    return;
 
-  auto u  = src_ptr[e];
-  auto v  = dst_ptr[e];
-  auto w  = w_ptr[e];
-  auto cu = comp_ptr[u];
-  auto cv = comp_ptr[v];
+  int u = src_ptr[e];
+  int v = dst_ptr[e];
+  float w = w_ptr[e];
+  int cu = comp_ptr[u];
+  int cv = comp_ptr[v];
 
-  // If same component, mark invalid.  Otherwise record comp_u→edge.
   if (cu == cv) {
-    keys_ptr[e]    = -1;
-    vals_ptr[e].w  = w;
-    vals_ptr[e].idx= e;
+    keys_ptr[2 * e] = -1;
+    vals_ptr[2 * e] = {w, e};
+    keys_ptr[2 * e + 1] = -1;
+    vals_ptr[2 * e + 1] = {w, e};
   } else {
-    keys_ptr[e]    = cu;
-    vals_ptr[e].w  = w;
-    vals_ptr[e].idx= e;
+    keys_ptr[2 * e] = cu;
+    vals_ptr[2 * e] = {w, e};
+    keys_ptr[2 * e + 1] = cv;
+    vals_ptr[2 * e + 1] = {w, e};
   }
 }
 
@@ -177,22 +179,23 @@ void BoruvkaGunrock::load_graph(const std::filesystem::path &file_path) {
   // 3) Build undirected edge lists (duplicate if u!=v)
   thrust::host_vector<vertex_t> h_src, h_dst;
   thrust::host_vector<weight_t> h_w;
-  h_src.reserve(original_edges);
-  h_dst.reserve(original_edges);
-  h_w.reserve(original_edges);
+  h_src.reserve(2 * original_edges);
+  h_dst.reserve(2 * original_edges);
+  h_w.reserve(2 * original_edges);
 
   for (edge_t i = 0; i < original_edges; ++i) {
     auto u = host_rows[i];
     auto v = host_cols[i];
     auto w = host_vals[i];
-    // skip self‐loops if any
-    if (u == v)
-      continue;
     h_src.push_back(u);
     h_dst.push_back(v);
     h_w.push_back(w);
+    if (u != v) {
+      h_src.push_back(v);
+      h_dst.push_back(u);
+      h_w.push_back(w);
+    }
   }
-
   num_edges = static_cast<edge_t>(h_src.size());
 
   // 4) Copy into your device‐side vectors
@@ -212,8 +215,8 @@ std::chrono::seconds BoruvkaGunrock::compute() {
   thrust::sequence(comp.begin(), comp.end(), 0); // comp[i] = i
 
   // Buffers for keys and values when finding minimum edges
-  thrust::device_vector<vertex_t> keys(num_edges);
-  thrust::device_vector<EdgePair> vals(num_edges);
+  thrust::device_vector<vertex_t> keys(2 * num_edges);
+  thrust::device_vector<EdgePair> vals(2 * num_edges);
   thrust::device_vector<vertex_t> comp_keys_out(
       num_vertices); // keys: component IDs
   thrust::device_vector<EdgePair> comp_vals_out(
