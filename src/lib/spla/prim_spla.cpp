@@ -26,11 +26,9 @@ namespace algos {
         n = n_input;
         buffer_int = std::vector<int>(n);
         buffer_float = std::vector<float>(n);
-        zero_vec = spla::Vector::make(n, spla::FLOAT);
-        zero_vec->fill_with(spla::Scalar::make_float(0));
         edges_count = nnz_input;
         a = spla::Matrix::make(n, n, spla::FLOAT);
-        a->set_fill_value(spla::Scalar::make_float(PROCESSED));
+        a->set_fill_value(spla::Scalar::make_float(INF));
 
         int u, v;
         float w;
@@ -88,14 +86,16 @@ namespace algos {
 //        to->build(keys_view, values_view);
 //    }
 
-    std::pair<float, int> PrimSpla::get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) {
+    const float EPS = 1e-8;
+
+    std::pair<float, int> PrimSpla::get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) const {
         int v = -1;
-        float min_dist = PROCESSED;
-        vec->get_float(v, min_dist);
+        float min_dist = INF;
+
         for (int i = 0; i < n; i++) {
             float dist;
             vec->get_float(i, dist);
-            if (dist < min_dist) {
+            if (dist > EPS && (v == -1 || dist < min_dist)) {
                 min_dist = dist;
                 v = i;
             }
@@ -103,69 +103,92 @@ namespace algos {
         return {min_dist, v};
     }
 
-    void PrimSpla::compute_() {
-        auto neg_one_float = spla::Scalar::make_float(-1);
-        auto not_processed = spla::Scalar::make_float(NOT_PROCESSED);
-        auto processed = spla::Scalar::make_float(PROCESSED);
-        auto zero_float = spla::Scalar::make_float(0);
+    void PrimSpla::log(const std::string &t) {
+        std::cout << "! " << t << ": "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(clock::now() - last_time).count()
+                  << '\n';
+        last_time = clock::now();
+    }
 
+    void PrimSpla::compute_() {
+        log("");
+
+        visited = spla::Vector::make(n, spla::INT);
+        visited->set_fill_value(spla::Scalar::make_int(0));
+        zero_vec = spla::Vector::make(n, spla::FLOAT);
         mst = spla::Vector::make(n, spla::FLOAT);
+
         auto d = spla::Vector::make(n, spla::FLOAT);
-        auto d_new = spla::Vector::make(n, spla::FLOAT);
-        auto d_mask = spla::Vector::make(n, spla::FLOAT);
+        auto changed = spla::Vector::make(n, spla::FLOAT);
         auto d_modified = spla::Vector::make(n, spla::FLOAT);
         auto v_row = spla::Vector::make(n, spla::FLOAT);
 
-        mst->set_fill_value(neg_one_float);
-        mst->fill_with(neg_one_float);
-        d->set_fill_value(processed);
-        d->fill_with(not_processed);
-        d_new->set_fill_value(processed);
-        d_mask->set_fill_value(processed);
-        d_modified->set_fill_value(processed);
-        v_row->set_fill_value(processed);
+        zero_vec->set_fill_value(zero_float);
+        mst->set_fill_value(inf_float);
+        d->set_fill_value(inf_float);
+        d_modified->set_fill_value(inf_float);
+        v_row->set_fill_value(inf_float);
+
+        changed->set_fill_value(zero_float);
 
         weight = 0;
         if (n <= 1 || edges_count == 0) {
             return;
         }
+
+        int counter = 0;
+
         while (true) {
-            exec_v_eadd(d_modified, d, zero_vec, spla::PLUS_FLOAT);
-            spla::exec_v_assign_masked(d_modified, d, processed, spla::SECOND_FLOAT, spla::EQZERO_FLOAT);
-            auto [min_dist, v] = get_min_with_arg(d_modified);
+            if (counter++ % 10000 == 0) {
+                log("10000 iterations");
+            }
+//            exec_v_eadd(d_modified, d, zero_vec, spla::PLUS_FLOAT);
+//            log("exec_v_eadd");
+//            spla::exec_v_assign_masked(d_modified, d, inf_float, spla::SECOND_FLOAT, spla::EQZERO_FLOAT);
+//            log("exec_v_assign_masked");
+            auto [min_dist, v] = get_min_with_arg(d);
+//            log("get_min_with_arg");
             if (v == -1) {
                 break;
             }
-            if (min_dist < NOT_PROCESSED) {
-                weight += min_dist;
-            }
             d->set_float(v, 0);
+//            log("set_visited");
 
             spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_FLOAT);
-            spla::exec_v_eadd(d_new, d, v_row, spla::MIN_FLOAT);
-            spla::exec_v_eadd(d_mask, d_new, d, spla::MINUS_FLOAT);
+//            log("exec_m_extract_row");
+            spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_FLOAT);
+//            log("exec_v_eadd");
 
-            spla::exec_v_assign_masked(mst, d_mask, spla::Scalar::make_float(static_cast<float>(v)), spla::SECOND_FLOAT,
-                                       spla::NQZERO_FLOAT);
-            std::swap(d, d_new);
+            auto v_float = spla::Scalar::make_float(static_cast<float>(v));
+            spla::exec_v_assign_masked(mst, changed, v_float, spla::SECOND_FLOAT, spla::NQZERO_FLOAT);
+//            log("exec_v_assign_masked");
         }
     }
 
     Tree PrimSpla::get_result() {
-        auto sparse_sz = spla::Scalar::make_uint(0);
         std::vector<int> p(n, -1);
-        auto mst1 = spla::Vector::make(n, spla::FLOAT);
-        mst1->set_fill_value(spla::Scalar::make_float(-1));
-        mst1->fill_with(spla::Scalar::make_float(-1));
-        exec_v_eadd(mst1, mst, zero_vec, spla::PLUS_FLOAT);
+        if (n <= 1 || edges_count == 0) {
+            return Tree{n, p, weight};
+        }
+        auto sparse_sz = spla::Scalar::make_uint(0);
+//        auto mst1 = spla::Vector::make(n, spla::FLOAT);
+//        mst1->set_fill_value(spla::Scalar::make_float(-1));
+//        exec_v_eadd(mst1, mst, zero_vec, spla::PLUS_FLOAT);
         spla::exec_v_count_mf(sparse_sz, mst);
         auto keys_view = spla::MemView::make(buffer_int.data(), sparse_sz->as_int());
         auto values_view = spla::MemView::make(buffer_float.data(), sparse_sz->as_int());
-        mst1->read(keys_view, values_view);
+        mst->read(keys_view, values_view);
         auto keys = (int *) keys_view->get_buffer();
         auto values = (float *) values_view->get_buffer();
         for (int i = 0; i < sparse_sz->as_int(); i++) {
-            p[keys[i]] = static_cast<int>(std::round(values[i]));
+            int cur_v = keys[i];
+            if (std::fabs(values[i] - INF) > EPS) {
+                int cur_p = static_cast<int>(std::round(values[i]));
+                p[cur_v] = cur_p;
+                float cur_w;
+                a->get_float(cur_v, cur_p, cur_w);
+                weight += cur_w;
+            }
         }
         return Tree{n, p, weight};
     }
