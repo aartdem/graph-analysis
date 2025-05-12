@@ -89,13 +89,14 @@ namespace algos {
     const float EPS = 1e-8;
 
     std::pair<float, int> PrimSpla::get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) const {
-        int v = -1;
-        float min_dist = INF;
+        int v = 0;
+        float min_dist;
+        vec->get_float(v, min_dist);
 
-        for (int i = 0; i < n; i++) {
+        for (int i = 1; i < n; i++) {
             float dist;
             vec->get_float(i, dist);
-            if (dist > EPS && (v == -1 || dist < min_dist)) {
+            if (dist < min_dist) {
                 min_dist = dist;
                 v = i;
             }
@@ -138,30 +139,49 @@ namespace algos {
 
         int counter = 0;
 
-        while (true) {
-            if (counter++ % 10000 == 0) {
-                log("10000 iterations");
-            }
-//            exec_v_eadd(d_modified, d, zero_vec, spla::PLUS_FLOAT);
-//            log("exec_v_eadd");
-//            spla::exec_v_assign_masked(d_modified, d, inf_float, spla::SECOND_FLOAT, spla::EQZERO_FLOAT);
-//            log("exec_v_assign_masked");
-            auto [min_dist, v] = get_min_with_arg(d);
-//            log("get_min_with_arg");
-            if (v == -1) {
-                break;
-            }
-            d->set_float(v, 0);
-//            log("set_visited");
+        for (int i = 0; i < n; i++) {
+            int v;
+            float min_dist;
+            d->get_float(i, min_dist);
+            if (std::fabs(min_dist - INF) < EPS) {
+                v = i;
+                d->set_float(v, 0);
 
-            spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_FLOAT);
-//            log("exec_m_extract_row");
-            spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_FLOAT);
-//            log("exec_v_eadd");
+                spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_FLOAT);
+                spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_FLOAT);
+                auto v_float = spla::Scalar::make_float(static_cast<float>(v));
+                spla::exec_v_assign_masked(mst, changed, v_float, spla::SECOND_FLOAT, spla::NQZERO_FLOAT);
 
-            auto v_float = spla::Scalar::make_float(static_cast<float>(v));
-            spla::exec_v_assign_masked(mst, changed, v_float, spla::SECOND_FLOAT, spla::NQZERO_FLOAT);
-//            log("exec_v_assign_masked");
+                while (true) {
+//                    if (counter++ % 10000 == 0) {
+//                        log("10000 iterations");
+//                    }
+
+                    exec_v_eadd(d_modified, d, zero_vec, spla::PLUS_FLOAT);
+                    log("exec_v_eadd");
+                    spla::exec_v_assign_masked(d_modified, d, inf_float, spla::SECOND_FLOAT, spla::EQZERO_FLOAT);
+                    log("exec_v_assign_masked");
+                    std::tie(min_dist, v) = get_min_with_arg(d_modified);
+                    log("get_min_with_arg");
+
+                    if (std::fabs(min_dist - INF) < EPS) {
+                        break;
+                    }
+
+                    weight += min_dist;
+                    d->set_float(v, 0);
+                    log("set_visited");
+
+                    spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_FLOAT);
+                    log("exec_m_extract_row");
+                    spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_FLOAT);
+                    log("exec_v_eadd");
+
+                    v_float = spla::Scalar::make_float(static_cast<float>(v));
+                    spla::exec_v_assign_masked(mst, changed, v_float, spla::SECOND_FLOAT, spla::NQZERO_FLOAT);
+                    log("exec_v_assign_masked");
+                }
+            }
         }
     }
 
@@ -171,9 +191,6 @@ namespace algos {
             return Tree{n, p, weight};
         }
         auto sparse_sz = spla::Scalar::make_uint(0);
-//        auto mst1 = spla::Vector::make(n, spla::FLOAT);
-//        mst1->set_fill_value(spla::Scalar::make_float(-1));
-//        exec_v_eadd(mst1, mst, zero_vec, spla::PLUS_FLOAT);
         spla::exec_v_count_mf(sparse_sz, mst);
         auto keys_view = spla::MemView::make(buffer_int.data(), sparse_sz->as_int());
         auto values_view = spla::MemView::make(buffer_float.data(), sparse_sz->as_int());
@@ -185,9 +202,6 @@ namespace algos {
             if (std::fabs(values[i] - INF) > EPS) {
                 int cur_p = static_cast<int>(std::round(values[i]));
                 p[cur_v] = cur_p;
-                float cur_w;
-                a->get_float(cur_v, cur_p, cur_w);
-                weight += cur_w;
             }
         }
         return Tree{n, p, weight};

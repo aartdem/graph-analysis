@@ -17,7 +17,7 @@ namespace algos {
     private:
         void compute_();
 
-        std::pair<float, int> get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) const;
+        [[nodiscard]] std::pair<float, int> get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) const;
 
 //        void copy_vector(const spla::ref_ptr<spla::Vector> &from, const spla::ref_ptr<spla::Vector> &to);
 
@@ -28,7 +28,6 @@ namespace algos {
 
         const float INF = 1e18;
         int n;
-        int last_not_visited = 0;
         int edges_count;
         uint32_t weight = 0;
         spla::ref_ptr<spla::Matrix> a;
