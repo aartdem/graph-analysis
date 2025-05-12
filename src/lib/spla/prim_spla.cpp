@@ -89,10 +89,10 @@ namespace algos {
 //    }
 
     std::pair<float, int> PrimSpla::get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) {
-        int v = 0;
-        float min_dist;
+        int v = -1;
+        float min_dist = PROCESSED;
         vec->get_float(v, min_dist);
-        for (int i = 1; i < n; i++) {
+        for (int i = 0; i < n; i++) {
             float dist;
             vec->get_float(i, dist);
             if (dist < min_dist) {
@@ -129,13 +129,13 @@ namespace algos {
         if (n <= 1 || edges_count == 0) {
             return;
         }
-        for (int i = 0; i < n; i++) {
-            if (i % 100 == 0) {
-                std::cout << i << '\n';
-            }
+        while (true) {
             exec_v_eadd(d_modified, d, zero_vec, spla::PLUS_FLOAT);
             spla::exec_v_assign_masked(d_modified, d, processed, spla::SECOND_FLOAT, spla::EQZERO_FLOAT);
             auto [min_dist, v] = get_min_with_arg(d_modified);
+            if (v == -1) {
+                break;
+            }
             if (min_dist < NOT_PROCESSED) {
                 weight += min_dist;
             }
