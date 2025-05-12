@@ -35,56 +35,170 @@ struct BoruvkaGunrock::MinEdgeOp {
   }
 };
 
+// CUDA kernel to record edge candidates into keys/vals
+__global__ void
+step1_kernel(int m,         // number of edges
+             int *comp_ptr, // comp array, length = num_vertices
+             int *src_ptr,  // src array,  length = m
+             int *dst_ptr,  // dst array,  length = m
+             float *w_ptr,  // weight array,length = m
+             int *keys_ptr, // keys array, length = m
+             BoruvkaGunrock::EdgePair *vals_ptr) // vals array, length = m
+{
+    int e = blockIdx.x * blockDim.x + threadIdx.x;
+  if (e >= m) return;
+
+  auto u  = src_ptr[e];
+  auto v  = dst_ptr[e];
+  auto w  = w_ptr[e];
+  auto cu = comp_ptr[u];
+  auto cv = comp_ptr[v];
+
+  // If same component, mark invalid.  Otherwise record comp_u→edge.
+  if (cu == cv) {
+    keys_ptr[e]    = -1;
+    vals_ptr[e].w  = w;
+    vals_ptr[e].idx= e;
+  } else {
+    keys_ptr[e]    = cu;
+    vals_ptr[e].w  = w;
+    vals_ptr[e].idx= e;
+  }
+}
+
+__global__ void step2_kernel(int k, BoruvkaGunrock::vertex_t *src_ptr,
+                             BoruvkaGunrock::vertex_t *dst_ptr,
+                             BoruvkaGunrock::vertex_t *comp_ptr,
+                             BoruvkaGunrock::vertex_t *newcomp_ptr,
+                             BoruvkaGunrock::EdgePair *out_vals_ptr) {
+  int i = blockIdx.x * blockDim.x + threadIdx.x;
+  if (i >= k)
+    return;
+
+  auto ep = out_vals_ptr[i];
+  int e = ep.idx;
+
+  auto u = src_ptr[e];
+  auto v = dst_ptr[e];
+  auto cu = comp_ptr[u];
+  auto cv = comp_ptr[v];
+  if (cu == cv)
+    return;
+
+  // choose root/other
+  auto root = (cu < cv ? cu : cv);
+  auto other = (cu < cv ? cv : cu);
+  // merge
+  newcomp_ptr[other] = root;
+}
+
+__global__ void pointer_jump_kernel(int num_vertices,
+                                    BoruvkaGunrock::vertex_t *newcomp_ptr) {
+  int v = blockIdx.x * blockDim.x + threadIdx.x;
+  if (v >= num_vertices)
+    return;
+  auto parent = newcomp_ptr[v];
+  auto grandparent = newcomp_ptr[parent];
+  if (grandparent != parent) {
+    newcomp_ptr[v] = grandparent;
+  }
+}
+
+__global__ void update_comp_kernel(int num_vertices,
+                                   BoruvkaGunrock::vertex_t *comp_ptr,
+                                   BoruvkaGunrock::vertex_t *newcomp_ptr) {
+  int v = blockIdx.x * blockDim.x + threadIdx.x;
+  if (v >= num_vertices)
+    return;
+  comp_ptr[v] = newcomp_ptr[comp_ptr[v]];
+}
+
 BoruvkaGunrock::BoruvkaGunrock()
     : num_vertices(0), num_edges(0), dev_(new DeviceData()) {}
 
 BoruvkaGunrock::~BoruvkaGunrock() = default;
 
+namespace detail {
+// Reads an *undirected* graph in MatrixMarket (.mtx) coordinate format.
+// The MTX format is assumed to be 1-based indexing.
+// On return, rows[i], cols[i], vals[i] are the COO entries.
+template <typename Vt, typename Et, typename Wt>
+void load_mtx_coo(const std::filesystem::path &path, std::vector<Vt> &rows,
+                  std::vector<Vt> &cols, std::vector<Wt> &vals) {
+  std::ifstream in(path);
+  if (!in)
+    throw std::runtime_error("Cannot open MTX file: " + path.string());
+
+  std::string line;
+  // Skip comments
+  while (std::getline(in, line)) {
+    if (line.empty() || line[0] == '%')
+      continue;
+    // this line should be the header: M N nnz
+    std::istringstream iss(line);
+    int M, N, nnz;
+    if (!(iss >> M >> N >> nnz))
+      throw std::runtime_error("Invalid MTX header in " + path.string());
+    rows.reserve(nnz);
+    cols.reserve(nnz);
+    vals.reserve(nnz);
+    // Read the nnz entries
+    for (int i = 0; i < nnz; ++i) {
+      int u, v;
+      Wt w;
+      in >> u >> v >> w;
+      // convert 1-based to 0-based
+      rows.push_back(static_cast<Vt>(u - 1));
+      cols.push_back(static_cast<Vt>(v - 1));
+      vals.push_back(w);
+    }
+    return;
+  }
+  throw std::runtime_error("Empty or malformed MTX: " + path.string());
+}
+} // namespace detail
+
 void BoruvkaGunrock::load_graph(const std::filesystem::path &file_path) {
   using namespace gunrock;
   io::matrix_market_t<vertex_t, edge_t, weight_t> mm;
-  auto loaded = mm.load(file_path);
-  auto &coo = std::get<1>(loaded);
-
-  // Define amount edges and verticies
-  auto host_rows = coo.row_indices;
-  auto host_cols = coo.column_indices;
-  auto host_vals = coo.nonzero_values;
+  std::vector<vertex_t> host_rows, host_cols;
+  std::vector<weight_t> host_vals;
+  detail::load_mtx_coo<vertex_t, edge_t, weight_t>(file_path, host_rows,
+                                                   host_cols, host_vals);
   edge_t original_edges = static_cast<edge_t>(host_rows.size());
 
-  // Define max id of the vertex
+  // 2) Compute number of vertices = max index + 1
   vertex_t max_v = 0;
   for (edge_t i = 0; i < original_edges; ++i) {
     max_v = std::max({max_v, host_rows[i], host_cols[i]});
   }
   num_vertices = max_v + 1;
 
-  // Arrays of edges
-  thrust::host_vector<vertex_t> h_src;
-  thrust::host_vector<vertex_t> h_dst;
-  thrust::host_vector<weight_t> h_weight;
-  h_src.reserve(2 * original_edges);
-  h_dst.reserve(2 * original_edges);
-  h_weight.reserve(2 * original_edges);
+  // 3) Build undirected edge lists (duplicate if u!=v)
+  thrust::host_vector<vertex_t> h_src, h_dst;
+  thrust::host_vector<weight_t> h_w;
+  h_src.reserve(original_edges);
+  h_dst.reserve(original_edges);
+  h_w.reserve(original_edges);
+
   for (edge_t i = 0; i < original_edges; ++i) {
     auto u = host_rows[i];
     auto v = host_cols[i];
     auto w = host_vals[i];
+    // skip self‐loops if any
+    if (u == v)
+      continue;
     h_src.push_back(u);
     h_dst.push_back(v);
-    h_weight.push_back(w);
-    if (u != v) {
-      h_src.push_back(v);
-      h_dst.push_back(u);
-      h_weight.push_back(w);
-    }
+    h_w.push_back(w);
   }
+
   num_edges = static_cast<edge_t>(h_src.size());
 
-  // Copy to GPU
+  // 4) Copy into your device‐side vectors
   dev_->d_src = h_src;
   dev_->d_dst = h_dst;
-  dev_->d_weight = h_weight;
+  dev_->d_weight = h_w;
 }
 
 std::chrono::seconds BoruvkaGunrock::compute() {
@@ -98,8 +212,8 @@ std::chrono::seconds BoruvkaGunrock::compute() {
   thrust::sequence(comp.begin(), comp.end(), 0); // comp[i] = i
 
   // Buffers for keys and values when finding minimum edges
-  thrust::device_vector<vertex_t> keys(2 * num_edges);
-  thrust::device_vector<EdgePair> vals(2 * num_edges);
+  thrust::device_vector<vertex_t> keys(num_edges);
+  thrust::device_vector<EdgePair> vals(num_edges);
   thrust::device_vector<vertex_t> comp_keys_out(
       num_vertices); // keys: component IDs
   thrust::device_vector<EdgePair> comp_vals_out(
@@ -120,28 +234,13 @@ std::chrono::seconds BoruvkaGunrock::compute() {
     EdgePair *vals_ptr = thrust::raw_pointer_cast(vals.data());
     edge_t m = num_edges;
 
-// Launch CUDA kernel: one thread per edge
-#pragma omp target teams distribute parallel for is_device_ptr(                \
-        comp_ptr, src_ptr, dst_ptr, w_ptr, keys_ptr, vals_ptr)
-    for (edge_t e = 0; e < m; ++e) {
-      vertex_t u = src_ptr[e];
-      vertex_t v = dst_ptr[e];
-      weight_t w = w_ptr[e];
-      vertex_t comp_u = comp_ptr[u];
-      vertex_t comp_v = comp_ptr[v];
-      if (comp_u == comp_v) {
-        // If edge is internal to a component: mark invalid
-        keys_ptr[2 * e] = -1;
-        vals_ptr[2 * e] = {w, e};
-        keys_ptr[2 * e + 1] = -1;
-        vals_ptr[2 * e + 1] = {w, e};
-      } else {
-        // Otherwise: emit both directions as valid
-        keys_ptr[2 * e] = comp_u;
-        vals_ptr[2 * e] = {w, e};
-        keys_ptr[2 * e + 1] = comp_v;
-        vals_ptr[2 * e + 1] = {w, e};
-      }
+    // Launch CUDA kernel: one thread per edge
+    {
+      int threads = 256;
+      int blocks = (m + threads - 1) / threads;
+      step1_kernel<<<blocks, threads>>>(m, comp_ptr, src_ptr, dst_ptr, w_ptr,
+                                        keys_ptr, vals_ptr);
+      cudaDeviceSynchronize();
     }
 
     // Step 2: Filter out invalid entries (key = -1)
@@ -156,10 +255,9 @@ std::chrono::seconds BoruvkaGunrock::compute() {
           return comp_id == -1;
         });
     size_t new_size = new_end - zip_begin;
-    if (new_size == 0) {
+    if (new_size == 0)
       // If no entries remain, MST is complete.
       break;
-    }
 
     // Resize vectors to new_size after filtering.
     keys.resize(new_size);
@@ -176,9 +274,8 @@ std::chrono::seconds BoruvkaGunrock::compute() {
         comp_keys_out
             .begin(); // comp numFound = number of comps that got an edge
 
-    if (num_comps_found == 0) {
+    if (num_comps_found == 0)
       break; // if numFound == 0: no more cross‐component edges → MST complete
-    }
 
     // Step 4: merge components using those edges
     thrust::device_vector<vertex_t> newComp_map(num_vertices);
@@ -188,27 +285,13 @@ std::chrono::seconds BoruvkaGunrock::compute() {
     EdgePair *out_vals_ptr = thrust::raw_pointer_cast(comp_vals_out.data());
     size_t k = num_comps_found;
 
-// CUDA kernel: for each (compID → EdgePair{w,e}):
-#pragma omp target teams distribute parallel for is_device_ptr(                \
-        comp_ptr, src_ptr, dst_ptr, out_keys_ptr, out_vals_ptr, newcomp_ptr)
-    for (size_t i = 0; i < k; ++i) {
-      EdgePair ep = out_vals_ptr[i];
-      edge_t e = ep.idx;
-
-      // Recover endpoints u,v and their comp labels
-      vertex_t u = src_ptr[e];
-      vertex_t v = dst_ptr[e];
-      vertex_t comp_u = comp_ptr[u];
-      vertex_t comp_v = comp_ptr[v];
-      if (comp_u == comp_v) {
-        continue; // if same label: skip
-      }
-      // Select the new component representative (smallest ID for determinism)
-      vertex_t root = (comp_u < comp_v ? comp_u : comp_v);
-      vertex_t other = (comp_u < comp_v ? comp_v : comp_u);
-
-      // Merge: redirect 'other' to 'root'
-      newcomp_ptr[other] = root;
+    // CUDA kernel: for each (compID → EdgePair{w,e}):
+    {
+      int threads = 256;
+      int blocks = (k + threads - 1) / threads;
+      step2_kernel<<<blocks, threads>>>(k, src_ptr, dst_ptr, comp_ptr,
+                                        newcomp_ptr, out_vals_ptr);
+      cudaDeviceSynchronize();
     }
 
     // Flatten union chains with pointer jumping on newComp_map
@@ -217,30 +300,31 @@ std::chrono::seconds BoruvkaGunrock::compute() {
     while (updated && iter < 10) {
       updated = false;
 
-// Atomic update: newComp_map[x] = newComp_map[newComp_map[x]]
-#pragma omp target teams distribute parallel for is_device_ptr(newcomp_ptr)
-      for (vertex_t i = 0; i < num_vertices; ++i) {
-        vertex_t parent = newcomp_ptr[i];
-        vertex_t grandparent = newcomp_ptr[parent];
-        if (grandparent != parent) {
-          newcomp_ptr[i] = grandparent;
-          updated = true;
+      // Atomic update: newComp_map[x] = newComp_map[newComp_map[x]]
+      {
+        int threads = 256;
+        int blocks = (num_vertices + threads - 1) / threads;
+        for (int iter = 0; iter < 10; ++iter) {
+          pointer_jump_kernel<<<blocks, threads>>>(num_vertices, newcomp_ptr);
+          cudaDeviceSynchronize();
         }
       }
-      iter++;
     }
 
-// Update component labels for all vertices: comp[v] = newComp_map[ comp[v] ]
-#pragma omp target teams distribute parallel for is_device_ptr(                \
-        comp_ptr, newcomp_ptr)
-    for (vertex_t v = 0; v < num_vertices; ++v) {
-      comp_ptr[v] = newcomp_ptr[comp_ptr[v]];
+    // Update component labels for all vertices: comp[v] = newComp_map[
+    // comp[v] ]
+    {
+      int threads = 256;
+      int blocks = (num_vertices + threads - 1) / threads;
+      update_comp_kernel<<<blocks, threads>>>(num_vertices, comp_ptr,
+                                              newcomp_ptr);
+      cudaDeviceSynchronize();
     }
 
     // Step 5: add the chosen edges to the MST result (on host)
     // Copy (weight, edgeIndex) pairs from comp_vals_out and corresponding
-    // component IDs from comp_keys_out to host To avoid duplicate edges, use a
-    // flag array marking edges already added
+    // component IDs from comp_keys_out to host To avoid duplicate edges, use
+    // a flag array marking edges already added
     std::vector<vertex_t> out_keys_host(num_comps_found);
     std::vector<EdgePair> out_vals_host(num_comps_found);
     thrust::copy(comp_keys_out.begin(), comp_keys_out.begin() + num_comps_found,

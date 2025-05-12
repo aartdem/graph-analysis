@@ -21,6 +21,9 @@ file(GLOB TEST_SOURCES
 
 set(BINARY ${CMAKE_PROJECT_NAME}_test)
 add_executable(${BINARY} ${TEST_SOURCES})
+set_target_properties(${BINARY} PROPERTIES
+  RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
+)
 
 get_target_property(ALGOS_ARCHS algos_lib CUDA_ARCHITECTURES)
 if(ALGOS_ARCHS)

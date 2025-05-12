@@ -10,6 +10,7 @@
 namespace algos {
 
 class BoruvkaGunrock : public MstAlgorithm {
+  long long num_original_edges_;
 public:
   BoruvkaGunrock();
   ~BoruvkaGunrock() override;
