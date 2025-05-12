@@ -2,7 +2,7 @@
 #include "gunrock/boruvka.hxx"
 
 int main() {
-    auto file = "data/test1.mtx";
+    auto file = "data/two_components_float.mtx";
     auto algo = std::make_unique<algos::BoruvkaGunrock>();
     algo->load_graph(file);
     auto t = algo->compute();

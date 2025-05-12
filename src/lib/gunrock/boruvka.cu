@@ -221,11 +221,16 @@ std::chrono::seconds BoruvkaGunrock::compute() {
       num_vertices); // keys: component IDs
   thrust::device_vector<EdgePair> comp_vals_out(
       num_vertices); // vals: candidate min-edge per component
+  edge_t m0 = num_edges / 2;
+  std::vector<char> edge_used(m0, 0);
+  edge_used.assign(m0, 0);
   bool merged = true;
 
   // Repeat until no more merges occur
   while (merged) {
     merged = false;
+    keys.resize(2 * num_edges);
+    vals.resize(2 * num_edges);
     // Step 1: Record edge candidates into keys/vals
     // Each edge (u,v) adds two entries—one for u’s comp, one for v’s.
     // If both ends share a comp, mark entry invalid (key = -1).
@@ -336,17 +341,14 @@ std::chrono::seconds BoruvkaGunrock::compute() {
                  out_vals_host.begin());
 
     // Recover the actual vertices of each edge
-    static std::vector<char> edge_used;
-    edge_used.assign(num_edges, 0);
     for (size_t i = 0; i < num_comps_found; ++i) {
       edge_t e = out_vals_host[i].idx;
+      edge_t orig = e / 2; // индекс неориентированного ребра
       weight_t w = out_vals_host[i].w;
-
-      // After the final comp update, u and v are in the same component
-      vertex_t u = (vertex_t)dev_->d_src[e];
-      vertex_t v = (vertex_t)dev_->d_dst[e];
-      if (!edge_used[e]) {
-        edge_used[e] = 1;
+      if (!edge_used[orig]) {
+        edge_used[orig] = 1;
+        vertex_t u = dev_->d_src[e];
+        vertex_t v = dev_->d_dst[e];
         mst_edges.emplace_back(u, v, w);
       }
     }

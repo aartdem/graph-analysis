@@ -42,6 +42,8 @@ target_compile_definitions(${BINARY}
   PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/data"
 )
 
-gtest_discover_tests(${BINARY}
-  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/data
-)
+add_test(NAME MstAlgorithmTest
+         COMMAND ${BINARY})
+
+set_tests_properties(MstAlgorithmTest PROPERTIES
+    ENVIRONMENT "CUDA_VISIBLE_DEVICES=0")
