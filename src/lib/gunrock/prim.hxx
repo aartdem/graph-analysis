@@ -9,10 +9,10 @@
 
 namespace algos {
 
-class BoruvkaGunrock : public MstAlgorithm {
+class PrimGunrock : public MstAlgorithm {
 public:
-  BoruvkaGunrock();
-  ~BoruvkaGunrock() override;
+  PrimGunrock();
+  ~PrimGunrock() override;
 
   void load_graph(const std::filesystem::path &file_path) override;
   std::chrono::seconds compute() override;
@@ -25,11 +25,11 @@ public:
   vertex_t num_vertices;
   edge_t num_edges;
 
-  struct EdgePair;
-  struct MinEdgeOp;
-
-  class DeviceData;
+  // Данные на устройстве (GPU)
+  struct DeviceData;
   std::unique_ptr<DeviceData> dev_;
+
+  // Результат MST: список ребер (parent, child, weight)
   std::vector<std::tuple<vertex_t, vertex_t, weight_t>> mst_edges;
 };
 

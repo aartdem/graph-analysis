@@ -1,9 +1,9 @@
 #include <iostream>
-#include "gunrock/boruvka.hxx"
+#include "gunrock/prim.hxx"
 
 int main() {
-    auto file = "data/two_components_float.mtx";
-    auto algo = std::make_unique<algos::BoruvkaGunrock>();
+    auto file = "data/test1.mtx";
+    auto algo = std::make_unique<algos::PrimGunrock>();
     algo->load_graph(file);
     auto t = algo->compute();
     std:: cout << t.count() << '\n';

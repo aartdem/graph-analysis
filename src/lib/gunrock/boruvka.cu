@@ -1,5 +1,3 @@
-
-#include "boruvka.hxx"
 #include <cuda_runtime.h> // defines threadIdx, blockIdx, blockDim, gridDim
 #include <device_launch_parameters.h>
 #include <gunrock/algorithms/algorithms.hxx> // Gunrock core
@@ -10,6 +8,9 @@
 #include <thrust/remove.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+
+#include "boruvka.hxx"
+#include "loader.hxx"
 
 namespace algos {
 struct BoruvkaGunrock::DeviceData {
@@ -120,49 +121,7 @@ BoruvkaGunrock::BoruvkaGunrock()
 
 BoruvkaGunrock::~BoruvkaGunrock() = default;
 
-namespace detail {
-// Reads an *undirected* graph in MatrixMarket (.mtx) coordinate format.
-// The MTX format is assumed to be 1-based indexing.
-// On return, rows[i], cols[i], vals[i] are the COO entries.
-template <typename Vt, typename Et, typename Wt>
-void load_mtx_coo(const std::filesystem::path &path, std::vector<Vt> &rows,
-                  std::vector<Vt> &cols, std::vector<Wt> &vals) {
-  std::ifstream in(path);
-  if (!in)
-    throw std::runtime_error("Cannot open MTX file: " + path.string());
-
-  std::string line;
-  // Skip comments
-  while (std::getline(in, line)) {
-    if (line.empty() || line[0] == '%')
-      continue;
-    // this line should be the header: M N nnz
-    std::istringstream iss(line);
-    int M, N, nnz;
-    if (!(iss >> M >> N >> nnz))
-      throw std::runtime_error("Invalid MTX header in " + path.string());
-    rows.reserve(nnz);
-    cols.reserve(nnz);
-    vals.reserve(nnz);
-    // Read the nnz entries
-    for (int i = 0; i < nnz; ++i) {
-      int u, v;
-      Wt w;
-      in >> u >> v >> w;
-      // convert 1-based to 0-based
-      rows.push_back(static_cast<Vt>(u - 1));
-      cols.push_back(static_cast<Vt>(v - 1));
-      vals.push_back(w);
-    }
-    return;
-  }
-  throw std::runtime_error("Empty or malformed MTX: " + path.string());
-}
-} // namespace detail
-
 void BoruvkaGunrock::load_graph(const std::filesystem::path &file_path) {
-  using namespace gunrock;
-  io::matrix_market_t<vertex_t, edge_t, weight_t> mm;
   std::vector<vertex_t> host_rows, host_cols;
   std::vector<weight_t> host_vals;
   detail::load_mtx_coo<vertex_t, edge_t, weight_t>(file_path, host_rows,

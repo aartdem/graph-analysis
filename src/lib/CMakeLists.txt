@@ -13,6 +13,7 @@ add_library(algos_lib STATIC ${LIB_SOURCES})
 set_target_properties(algos_lib PROPERTIES
   CUDA_SEPARABLE_COMPILATION ON
   POSITION_INDEPENDENT_CODE ON
+  CUDA_RESOLVE_DEVICE_SYMBOLS ON
 )
 set(SPLA_BUILD_TESTS OFF CACHE BOOL "Disable building of Spla unit tests" FORCE)
 set(SPLA_BUILD_EXAMPLES OFF CACHE BOOL "Disable building of Spla examples" FORCE)
