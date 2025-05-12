@@ -159,17 +159,29 @@ std::chrono::seconds PrimGunrock::compute() {
         thrust::min_element(thrust::device, D.d_key.begin(), D.d_key.end());
     vertex_t u = it - D.d_key.begin();
     weight_t minKey = *it;
-    if (minKey == INF)
-      break; // оставшиеся недостижимы
+    if (minKey == INF) {
+      bool found = false;
+      for (vertex_t x = 0; x < num_vertices; ++x) {
+        if (D.d_inMST[x] == 0) {
+          // сбрасываем ключ на этот x, "родителя" в себя
+          D.d_key[x] = 0;
+          D.d_parent[x] = x;
+          it = D.d_key.begin() + x;
+          u = x;
+          minKey = 0;
+          found = true;
+          break;
+        }
+      }
+      if (!found)
+        break;
+    }
 
     // 2) Включаем u в MST
-    thrust::fill_n(thrust::device, D.d_inMST.begin() + u, 1, (char)1);
-    *it = INF; // исключаем из дальнейшего выбора
-    if (u != 0) {
-      // считываем именно parent[u] из device_vector
-      vertex_t pu = D.d_parent[u];
-      mst_edges.emplace_back(pu, u, minKey);
-    }
+    D.d_inMST[u] = 1;
+    *it = INF;
+    if (u != D.d_parent[u])
+      mst_edges.emplace_back(D.d_parent[u], u, minKey);
 
     // 3) Параллельно обновляем ключи соседей
     edge_t e_start = D.h_row_offsets[u];
