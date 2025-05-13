@@ -24,14 +24,14 @@ namespace algos {
             throw std::runtime_error("Invalid mtx format, nnz < 0");
         }
         n = n_input;
-        buffer_int = std::vector<int>(n);
-        buffer_float = std::vector<float>(n);
+        buffer1 = std::vector<unsigned int>(n);
+        buffer2 = std::vector<unsigned int>(n);
         edges_count = nnz_input;
-        a = spla::Matrix::make(n, n, spla::FLOAT);
-        a->set_fill_value(spla::Scalar::make_float(INF));
+        a = spla::Matrix::make(n, n, spla::UINT);
+        a->set_fill_value(spla::Scalar::make_uint(INF));
 
         int u, v;
-        float w;
+        int w;
         for (int i = 0; i < nnz_input; ++i) {
             if (i % 1000000 == 0) {
                 std::cout << "readed: " << i << '\n';
@@ -46,8 +46,8 @@ namespace algos {
                 throw std::runtime_error("Invalid graph, negative edges");
             }
             if (u != v) {
-                a->set_float(u, v, w);
-                a->set_float(v, u, w);
+                a->set_uint(u, v, (w << C) + v);
+                a->set_uint(v, u, (w << C) + u);
             }
         }
     }
@@ -55,15 +55,15 @@ namespace algos {
     // for debug
     void PrimSpla::print_vector(const spla::ref_ptr<spla::Vector> &v, const std::string &name = "") {
         std::cout << "-- " << name << " --\n";
-        auto sz = spla::Scalar::make_int(0);
+        auto sz = spla::Scalar::make_uint(0);
         spla::exec_v_count_mf(sz, v);
-        auto keys_view = spla::MemView::make(buffer_int.data(), sz->as_int());
-        auto values_view = spla::MemView::make(buffer_float.data(), sz->as_int());
+        auto keys_view = spla::MemView::make(buffer1.data(), sz->as_uint(), false);
+        auto values_view = spla::MemView::make(buffer2.data(), sz->as_uint(), false);
         v->read(keys_view, values_view);
-        auto keys = (int *) keys_view->get_buffer();
-        auto values = (float *) values_view->get_buffer();
-        for (int i = 0; i < sz->as_int(); i++) {
-            std::cout << keys[i] << ' ' << values[i] << '\n';
+        auto keys = (unsigned int *) keys_view->get_buffer();
+        auto values = (unsigned int *) values_view->get_buffer();
+        for (unsigned int i = 0; i < sz->as_uint(); i++) {
+            std::cout << keys[i] << " | " << values[i] << ' ' << values[i] / C << ' ' << values[i] % C << '\n';
         }
     }
 
@@ -76,33 +76,7 @@ namespace algos {
         return std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     }
 
-//    void PrimSpla::copy_vector(const spla::ref_ptr<spla::Vector> &from, const spla::ref_ptr<spla::Vector> &to) {
-//        auto sparse_sz = spla::Scalar::make_uint(0);
-//        spla::exec_v_count_mf(sparse_sz, from);
-//        int sz = sparse_sz->as_int();
-//        auto keys_view = spla::MemView::make(buffer_int.data(), sz);
-//        auto values_view = spla::MemView::make(buffer_float.data(), sz);
-//        from->read(keys_view, values_view);
-//        to->build(keys_view, values_view);
-//    }
-
-    const float EPS = 1e-8;
-
-    std::pair<float, int> PrimSpla::get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) const {
-        int v = 0;
-        float min_dist;
-        vec->get_float(v, min_dist);
-
-        for (int i = 1; i < n; i++) {
-            float dist;
-            vec->get_float(i, dist);
-            if (dist < min_dist) {
-                min_dist = dist;
-                v = i;
-            }
-        }
-        return {min_dist, v};
-    }
+//    const float EPS = 1e-8;
 
     void PrimSpla::log(const std::string &t) {
         std::cout << "! " << t << ": "
@@ -114,72 +88,79 @@ namespace algos {
     void PrimSpla::compute_() {
         log("");
 
-        visited = spla::Vector::make(n, spla::INT);
-        visited->set_fill_value(spla::Scalar::make_int(0));
-        zero_vec = spla::Vector::make(n, spla::FLOAT);
-        mst = spla::Vector::make(n, spla::FLOAT);
+//        visited = spla::Vector::make(n, spla::UINT);
+        zero_vec = spla::Vector::make(n, spla::UINT);
+        mst = spla::Vector::make(n, spla::UINT);
 
-        auto d = spla::Vector::make(n, spla::FLOAT);
-        auto changed = spla::Vector::make(n, spla::FLOAT);
-        auto d_modified = spla::Vector::make(n, spla::FLOAT);
-        auto v_row = spla::Vector::make(n, spla::FLOAT);
+        auto d = spla::Vector::make(n, spla::UINT);
+        auto changed = spla::Vector::make(n, spla::UINT);
+        auto d_modified = spla::Vector::make(n, spla::UINT);
+        auto v_row = spla::Vector::make(n, spla::UINT);
+        auto min_v = spla::Scalar::make_uint(INF);
 
-        zero_vec->set_fill_value(zero_float);
-        mst->set_fill_value(inf_float);
-        d->set_fill_value(inf_float);
-        d_modified->set_fill_value(inf_float);
-        v_row->set_fill_value(inf_float);
-
-        changed->set_fill_value(zero_float);
+//        visited->set_fill_value(zero_uint);
+        zero_vec->set_fill_value(zero_uint);
+        changed->set_fill_value(zero_uint);
+        mst->set_fill_value(inf_uint);
+        d->set_fill_value(inf_uint);
+        d_modified->set_fill_value(inf_uint);
+        v_row->set_fill_value(inf_uint);
 
         weight = 0;
         if (n <= 1 || edges_count == 0) {
             return;
         }
 
-        int counter = 0;
+        unsigned int counter = 0;
 
         for (int i = 0; i < n; i++) {
-            int v;
-            float min_dist;
-            d->get_float(i, min_dist);
-            if (std::fabs(min_dist - INF) < EPS) {
+            unsigned int v;
+            unsigned int min_dist;
+            d->get_uint(i, min_dist);
+            if (min_dist == INF) {
                 v = i;
-                d->set_float(v, 0);
+                d->set_uint(v, 0);
 
-                spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_FLOAT);
-                spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_FLOAT);
-                auto v_float = spla::Scalar::make_float(static_cast<float>(v));
-                spla::exec_v_assign_masked(mst, changed, v_float, spla::SECOND_FLOAT, spla::NQZERO_FLOAT);
+                spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_UINT);
+                spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_UINT);
+                spla::exec_v_assign_masked(mst, changed, spla::Scalar::make_uint(v), spla::SECOND_UINT,
+                                           spla::NQZERO_UINT);
 
                 while (true) {
-//                    if (counter++ % 10000 == 0) {
-//                        log("10000 iterations");
-//                    }
+                    if (++counter % 10000 == 0) {
+                        log("10000 iterations");
+                    }
 
-                    exec_v_eadd(d_modified, d, zero_vec, spla::PLUS_FLOAT);
-                    log("exec_v_eadd");
-                    spla::exec_v_assign_masked(d_modified, d, inf_float, spla::SECOND_FLOAT, spla::EQZERO_FLOAT);
-                    log("exec_v_assign_masked");
-                    std::tie(min_dist, v) = get_min_with_arg(d_modified);
-                    log("get_min_with_arg");
+                    exec_v_eadd(d_modified, d, zero_vec, spla::PLUS_UINT);
+//                    log("exec_v_eadd");
+                    spla::exec_v_assign_masked(d_modified, d, inf_uint, spla::SECOND_UINT, spla::EQZERO_UINT);
+//                    log("exec_v_assign_masked");
 
-                    if (std::fabs(min_dist - INF) < EPS) {
+//                    print_vector(d_modified, "d_modified");
+
+                    spla::exec_v_reduce(min_v, inf_uint, d_modified, spla::MIN_UINT);
+//                    log("exec_v_reduce");
+
+                    unsigned int min_v_val = min_v->as_uint();
+                    if (min_v_val == INF) {
                         break;
                     }
 
-                    weight += min_dist;
-                    d->set_float(v, 0);
-                    log("set_visited");
+                    weight += (min_v_val >> C);
+                    v = min_v_val & 0x003F'FFFF;
+//                    log("extract");
 
-                    spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_FLOAT);
-                    log("exec_m_extract_row");
-                    spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_FLOAT);
-                    log("exec_v_eadd");
+                    d->set_uint(v, 0);
+//                    log("set_visited");
 
-                    v_float = spla::Scalar::make_float(static_cast<float>(v));
-                    spla::exec_v_assign_masked(mst, changed, v_float, spla::SECOND_FLOAT, spla::NQZERO_FLOAT);
-                    log("exec_v_assign_masked");
+                    spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_UINT);
+//                    log("exec_m_extract_row");
+                    spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_UINT);
+//                    log("exec_v_eadd");
+
+                    spla::exec_v_assign_masked(mst, changed, spla::Scalar::make_uint(v), spla::SECOND_UINT,
+                                               spla::NQZERO_UINT);
+//                    log("exec_v_assign_masked");
                 }
             }
         }
@@ -188,19 +169,19 @@ namespace algos {
     Tree PrimSpla::get_result() {
         std::vector<int> p(n, -1);
         if (n <= 1 || edges_count == 0) {
-            return Tree{n, p, weight};
+            return Tree{n, p, 0};
         }
         auto sparse_sz = spla::Scalar::make_uint(0);
         spla::exec_v_count_mf(sparse_sz, mst);
-        auto keys_view = spla::MemView::make(buffer_int.data(), sparse_sz->as_int());
-        auto values_view = spla::MemView::make(buffer_float.data(), sparse_sz->as_int());
+        auto keys_view = spla::MemView::make(buffer1.data(), sparse_sz->as_int());
+        auto values_view = spla::MemView::make(buffer2.data(), sparse_sz->as_int());
         mst->read(keys_view, values_view);
         auto keys = (int *) keys_view->get_buffer();
-        auto values = (float *) values_view->get_buffer();
+        auto values = (unsigned int *) values_view->get_buffer();
         for (int i = 0; i < sparse_sz->as_int(); i++) {
             int cur_v = keys[i];
-            if (std::fabs(values[i] - INF) > EPS) {
-                int cur_p = static_cast<int>(std::round(values[i]));
+            if (values[i] != INF) {
+                int cur_p = static_cast<int>(values[i]);
                 p[cur_v] = cur_p;
             }
         }

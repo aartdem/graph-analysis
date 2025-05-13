@@ -17,8 +17,6 @@ namespace algos {
     private:
         void compute_();
 
-        [[nodiscard]] std::pair<float, int> get_min_with_arg(const spla::ref_ptr<spla::Vector> &vec) const;
-
 //        void copy_vector(const spla::ref_ptr<spla::Vector> &from, const spla::ref_ptr<spla::Vector> &to);
 
         void print_vector(const spla::ref_ptr<spla::Vector> &vec, const std::string &name);
@@ -26,19 +24,19 @@ namespace algos {
         void log(const std::string& t);
         using clock = std::chrono::steady_clock;
 
-        const float INF = 1e18;
+        const unsigned int INF = UINT32_MAX;
+        const unsigned int C = 22;
         int n;
         int edges_count;
-        uint32_t weight = 0;
+        unsigned long long weight = 0;
         spla::ref_ptr<spla::Matrix> a;
         spla::ref_ptr<spla::Vector> mst;
-        std::vector<int> buffer_int;
-        std::vector<float> buffer_float;
-        spla::ref_ptr<spla::Vector> visited;
+        std::vector<unsigned int> buffer1;
+        std::vector<unsigned int> buffer2;
+//        spla::ref_ptr<spla::Vector> visited;
         spla::ref_ptr<spla::Vector> zero_vec;
-        spla::ref_ptr<spla::Scalar> neg_one_float = spla::Scalar::make_float(-1);
-        spla::ref_ptr<spla::Scalar> inf_float = spla::Scalar::make_float(INF);
-        spla::ref_ptr<spla::Scalar> zero_float = spla::Scalar::make_float(0);
+        spla::ref_ptr<spla::Scalar> inf_uint = spla::Scalar::make_uint(INF);
+        spla::ref_ptr<spla::Scalar> zero_uint = spla::Scalar::make_uint(0);
         std::chrono::steady_clock::time_point last_time = clock::now();
     };
 }
