@@ -26,7 +26,7 @@ namespace algos {
         const float PROCESSED = 1e19;
         int n;
         int edges_count;
-        float weight = 0;
+        uint32_t weight = 0;
         spla::ref_ptr<spla::Matrix> a;
         spla::ref_ptr<spla::Vector> mst;
         std::vector<int> buffer_int;
