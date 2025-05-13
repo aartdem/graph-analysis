@@ -2,3 +2,6 @@
 	path = deps/spla
 	url = https://github.com/SparseLinearAlgebra/spla.git
 	branch = main
+[submodule "deps/gunrock"]
+	path = deps/gunrock
+	url = https://github.com/gunrock/gunrock.git
