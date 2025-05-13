@@ -37,7 +37,6 @@ namespace algos {
         buffer_int = vector<int>(n);
         adj_list.resize(n);
 
-        // Создаем матрицу и заполняем бесконечностями сразу
         constexpr uint32_t WEIGHT_SHIFT = 22;
         constexpr uint32_t INF_ENCODED = UINT32_MAX;
 
@@ -179,18 +178,19 @@ namespace algos {
             comp_to_vertices[i].push_back(i);
         }
 
-        // Компоненты, которые изменились на текущей итерации
+        // Components that changed in the current iteration
         std::set<uint> modified_comps;
 
         for (int iter = 0; iter < n; iter++) {
-            cout << "Weight: " << weight << ", Iteration: " << iter << '\n';
+            //cout << "Weight: " << weight << ", Iteration: " << iter << '\n';
+            modified_comps.clear();
             edge->set_fill_value(Scalar::make_uint(INF_ENCODED));
             edge->fill_with(Scalar::make_uint(INF_ENCODED));
 
-            // Находим минимальное ребро для каждой вершины
+            // Find the minimum edge for each vertex
             exec_m_reduce_by_row(edge, a, MIN_UINT, Scalar::make_uint(INF_ENCODED));
 
-            // Находим минимальное ребро для каждой компоненты
+            // Find the minimum edge for each component
             ranges::fill(cedge_array, INF_ENCODED);
             for (uint v = 0; v < n; v++) {
                 const uint root = f_array[v];
@@ -204,22 +204,19 @@ namespace algos {
                 }
             }
 
-            // Очищаем список изменённых компонент
-            modified_comps.clear();
-
-            // Добавляем рёбра в MST и объединяем компоненты
+            // Add edges to MST and merge components
             bool added_edges = false;
             for (uint i = 0; i < n; i++) {
                 uint comp_i = f_array[i];
 
-                if (i == comp_i) {  // i - корень компоненты
+                if (i == comp_i) {  // i - component root
                     uint cedge_i = cedge_array[i];
 
                     if (cedge_i != INF_ENCODED) {
                         const uint dest = cedge_i & INDEX_MASK;
                         const uint w = cedge_i >> WEIGHT_SHIFT;
 
-                        // Находим источник минимального ребра
+                        // Find the source of the minimum edge
                         uint src = UINT_MAX;
                         for (uint v : comp_to_vertices[comp_i]) {
                             if (edge_array[v] == cedge_i) {
@@ -234,14 +231,11 @@ namespace algos {
                             added_edges = true;
                         }
 
-                        // Объединяем компоненты
                         uint comp_dest = f_array[dest];
                         const uint new_comp = i < comp_dest ? i : comp_dest;
 
-                        // Запоминаем изменённые компоненты
                         modified_comps.insert(new_comp);
 
-                        // Объединяем списки вершин
                         if (new_comp != comp_i) {
                             comp_to_vertices[new_comp].insert(
                                 comp_to_vertices[new_comp].end(),
@@ -249,7 +243,6 @@ namespace algos {
                                 comp_to_vertices[comp_i].end());
                             comp_to_vertices[comp_i].clear();
                         }
-
                         if (new_comp != comp_dest) {
                             comp_to_vertices[new_comp].insert(
                                 comp_to_vertices[new_comp].end(),
@@ -258,7 +251,6 @@ namespace algos {
                             comp_to_vertices[comp_dest].clear();
                         }
 
-                        // Обновляем компоненты в f_array
                         for (uint v : comp_to_vertices[new_comp]) {
                             f_array[v] = new_comp;
                         }
@@ -268,7 +260,7 @@ namespace algos {
 
             if (!added_edges) break;
 
-            // Удаляем рёбра внутри компонент
+            // filter A matrix
             for (const uint comp : modified_comps) {
                 const auto& vertices = comp_to_vertices[comp];
                 unordered_set set_vertices(vertices.begin(), vertices.end());
