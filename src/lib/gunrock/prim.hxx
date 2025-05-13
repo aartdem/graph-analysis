@@ -25,11 +25,9 @@ public:
   vertex_t num_vertices;
   edge_t num_edges;
 
-  // Данные на устройстве (GPU)
   struct DeviceData;
   std::unique_ptr<DeviceData> dev_;
 
-  // Результат MST: список ребер (parent, child, weight)
   std::vector<std::tuple<vertex_t, vertex_t, weight_t>> mst_edges;
 };
 

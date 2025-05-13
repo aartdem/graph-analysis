@@ -14,24 +14,24 @@
 
 namespace algos {
 
-// Структура DeviceData хранит CSR-граф и вспомогательные буферы на GPU
+// Structure holding the graph in CSR format and auxiliary GPU buffers
 struct PrimGunrock::DeviceData {
   using vertex_t = PrimGunrock::vertex_t;
   using edge_t = PrimGunrock::edge_t;
   using weight_t = PrimGunrock::weight_t;
 
-  // CSR представление графа
-  thrust::device_vector<edge_t> d_row_offsets;   // size = num_vertices+1
-  thrust::device_vector<vertex_t> d_col_indices; // size = num_edges
-  thrust::device_vector<weight_t> d_weight;      // size = num_edges
+  // CSR representation
+  thrust::device_vector<edge_t> d_row_offsets;   // length = num_vertices + 1
+  thrust::device_vector<vertex_t> d_col_indices; // length = num_edges
+  thrust::device_vector<weight_t> d_weight;      // length = num_edges
 
-  // Хост-копия row_offsets для доступа из хоста
-  thrust::host_vector<edge_t> h_row_offsets; // size = num_vertices+1
+  // Host copy of row_offsets for host-side access
+  thrust::host_vector<edge_t> h_row_offsets; // length = num_vertices + 1
 
-  // Буферы для алгоритма Прима
-  thrust::device_vector<weight_t> d_key; // ключи (минимальные веса)
-  thrust::device_vector<vertex_t> d_parent; // родители в MST
-  thrust::device_vector<char> d_inMST; // флаги включения в MST (0/1)
+  // Buffers for Prim's algorithm
+  thrust::device_vector<weight_t> d_key;    // minimum edge weights
+  thrust::device_vector<vertex_t> d_parent; // MST parent pointers
+  thrust::device_vector<char> d_inMST;      // flags marking inclusion in MST
 
   DeviceData() = default;
 };
@@ -46,13 +46,13 @@ void PrimGunrock::load_graph(const std::filesystem::path &file_path) {
   using edge_t = PrimGunrock::edge_t;
   using weight_t = PrimGunrock::weight_t;
 
-  // 1) Загрузить исходный COO
+  // Load the graph in COO format
   std::vector<vertex_t> coo_row, coo_col;
   std::vector<weight_t> coo_val;
   detail::load_mtx_coo<vertex_t, edge_t, weight_t>(file_path, coo_row, coo_col,
                                                    coo_val);
 
-  // 2) Вычислить число вершин и исходных рёбер
+  // Determine number of vertices and original edges
   edge_t original_edges = static_cast<edge_t>(coo_row.size());
   vertex_t max_v = 0;
   for (vertex_t u : coo_row)
@@ -61,7 +61,7 @@ void PrimGunrock::load_graph(const std::filesystem::path &file_path) {
     max_v = std::max(max_v, v);
   num_vertices = max_v + 1;
 
-  // 3) Построить удвоенный COO
+  // Build a symmetric COO (undirected graph)
   std::vector<vertex_t> srcs, dsts;
   std::vector<weight_t> weights;
   srcs.reserve(2 * original_edges);
@@ -82,20 +82,20 @@ void PrimGunrock::load_graph(const std::filesystem::path &file_path) {
   }
   num_edges = static_cast<edge_t>(srcs.size());
 
-  // 4) Собрать локальный CSR:
-  // 4.1) степени
+  // Build CSR structure locally
+  // Compute vertex degrees
   std::vector<vertex_t> degrees(num_vertices, 0);
   for (edge_t i = 0; i < num_edges; ++i) {
     degrees[srcs[i]]++;
   }
 
-  // 4.2) эксклюзивный префикс-сумм
+  // Compute exclusive prefix sum for row offsets
   std::vector<vertex_t> row_offsets_local(num_vertices + 1);
   row_offsets_local[0] = 0;
   for (vertex_t i = 0; i < num_vertices; ++i)
     row_offsets_local[i + 1] = row_offsets_local[i] + degrees[i];
 
-  // 4.3) курсоры и fill
+  // Initialize cursors and fill column and weight arrays
   std::vector<edge_t> cursor(row_offsets_local.begin(),
                              row_offsets_local.end());
   std::vector<vertex_t> col_idx_local(num_edges);
@@ -110,7 +110,7 @@ void PrimGunrock::load_graph(const std::filesystem::path &file_path) {
   dev_->h_row_offsets = thrust::host_vector<vertex_t>(row_offsets_local.begin(),
                                                       row_offsets_local.end());
 
-  // 5) Копируем локальные CSR в device_vector
+  // Copy CSR data to device vectors
   dev_->d_row_offsets = thrust::device_vector<vertex_t>(
       row_offsets_local.begin(), row_offsets_local.end());
   dev_->d_col_indices = thrust::device_vector<vertex_t>(col_idx_local.begin(),
@@ -131,7 +131,7 @@ std::chrono::seconds PrimGunrock::compute() {
     return {};
 
   auto &D = *dev_;
-  // Ресайзим буферы
+  // Resize buffers for Prim's algorithm
   D.d_key.resize(num_vertices);
   D.d_parent.resize(num_vertices);
   D.d_inMST.resize(num_vertices);
@@ -140,11 +140,11 @@ std::chrono::seconds PrimGunrock::compute() {
   thrust::fill(D.d_parent.begin(), D.d_parent.end(), -1);
   thrust::fill(D.d_inMST.begin(), D.d_inMST.end(), 0);
 
-  // Стартовая вершина = 0
+  // Start from vertex 0
   D.d_key[0] = 0;
   D.d_parent[0] = 0;
 
-  // Сырые указатели для девайс-данных
+  // Raw pointers for device data
   auto row_ptr = thrust::raw_pointer_cast(D.d_row_offsets.data());
   auto col_ptr = thrust::raw_pointer_cast(D.d_col_indices.data());
   auto w_ptr = thrust::raw_pointer_cast(D.d_weight.data());
@@ -152,18 +152,18 @@ std::chrono::seconds PrimGunrock::compute() {
   auto parent_ptr = thrust::raw_pointer_cast(D.d_parent.data());
   auto inMST_ptr = thrust::raw_pointer_cast(D.d_inMST.data());
 
-  // Основной цикл Прима
+  // Main Prim's loop
   for (size_t iter = 0; iter < num_vertices; ++iter) {
-    // 1) Выбираем вершину u с минимальным ключом
+    // Select the vertex with the minimum key
     auto it =
         thrust::min_element(thrust::device, D.d_key.begin(), D.d_key.end());
     vertex_t u = it - D.d_key.begin();
     weight_t minKey = *it;
     if (minKey == INF) {
+      // Handle disconnected components by resetting a new start vertex
       bool found = false;
       for (vertex_t x = 0; x < num_vertices; ++x) {
         if (D.d_inMST[x] == 0) {
-          // сбрасываем ключ на этот x, "родителя" в себя
           D.d_key[x] = 0;
           D.d_parent[x] = x;
           it = D.d_key.begin() + x;
@@ -177,13 +177,13 @@ std::chrono::seconds PrimGunrock::compute() {
         break;
     }
 
-    // 2) Включаем u в MST
+    // Include vertex u in the MST
     D.d_inMST[u] = 1;
     *it = INF;
     if (u != D.d_parent[u])
       mst_edges.emplace_back(D.d_parent[u], u, minKey);
 
-    // 3) Параллельно обновляем ключи соседей
+    // Update keys of adjacent vertices in parallel
     edge_t e_start = D.h_row_offsets[u];
     edge_t e_end = D.h_row_offsets[u + 1];
     thrust::for_each(thrust::device,
@@ -204,14 +204,15 @@ std::chrono::seconds PrimGunrock::compute() {
 }
 
 Tree PrimGunrock::get_result() {
-  // Копируем родителей на хост
+  // Copy parent array back to host
   std::vector<int> parent(num_vertices);
   thrust::copy(dev_->d_parent.begin(), dev_->d_parent.end(), parent.begin());
-  // Считаем общий вес
-  float totalW = 0;
-  for (auto &t : mst_edges)
-    totalW += std::get<2>(t);
-  return Tree(num_vertices, parent, totalW);
+
+  // Compute total weight of the MST
+  float totalWeight = 0;
+  for (auto &edge : mst_edges)
+    totalWeight += std::get<2>(edge);
+  return Tree(num_vertices, parent, totalWeight);
 }
 
 } // namespace algos
