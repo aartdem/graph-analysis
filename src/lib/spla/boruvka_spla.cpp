@@ -33,7 +33,13 @@ namespace algos {
         n = n_input;
         edges = nnz_input;
         buffer_int = vector<int>(n);
+
+        // Создаем матрицу и заполняем бесконечностями сразу
+        constexpr uint32_t WEIGHT_SHIFT = 22;
+        constexpr uint32_t INF_ENCODED = UINT32_MAX;
+
         a = Matrix::make(n, n, UINT);
+        a->set_fill_value(Scalar::make_uint(INF_ENCODED));
 
         int u, v;
         uint32_t w;
@@ -47,9 +53,16 @@ namespace algos {
             if (w <= 0) {
                 throw runtime_error("Invalid graph, negative edges");
             }
+            if (w >= (1 << 10)) {
+                throw runtime_error("Edge weight too large, max is 1023");
+            }
+
             if (u != v) {
-                a->set_uint(u, v, w);
-                a->set_uint(v, u, w);
+                uint32_t encoded_u_v = (w << WEIGHT_SHIFT) | v;
+                uint32_t encoded_v_u = (w << WEIGHT_SHIFT) | u;
+
+                a->set_uint(u, v, encoded_u_v);
+                a->set_uint(v, u, encoded_v_u);
             }
         }
     }
@@ -155,42 +168,29 @@ namespace algos {
             f->set_uint(v, v);
         }
 
-        cout << "инициализирую матрицу S" << endl;
-
-        const auto S = Matrix::make(n, n, UINT);
-        S->set_fill_value(Scalar::make_uint(INF_ENCODED));
-
-        for (uint src = 0; src < n; src++) {
-            for (uint dst = 0; dst < n; dst++) {
-                uint w;
-                a->get_uint(src, dst, w);
-                if ( w > 0 && w < 1 << 10) {
-                    const uint32_t encoded = w << WEIGHT_SHIFT | dst;
-                    S->set_uint(src, dst, encoded);
-                } else {
-                    // кинуть ошибку
-                    //S->set_uint(src, dst, INF_ENCODED);
-                }
-            }
-        }
-
         std::vector<uint> parent(n);
 
         uint nvals = n * n;
         for (int iter = 0; nvals > 0 && iter < n; iter++) {
-            cout << weight << '\n';
+            cout << "Weight: " << weight << '\n';
             edge->set_fill_value(Scalar::make_uint(INF_ENCODED));
             edge->fill_with(Scalar::make_uint(INF_ENCODED));
 
+            cout << "fuck 1" << endl;
+
             // для каждой вершины находим минимальное ребро
-            exec_m_reduce_by_row(edge, S, MIN_UINT, Scalar::make_uint(INF_ENCODED));
+            exec_m_reduce_by_row(edge, a, MIN_UINT, Scalar::make_uint(INF_ENCODED));
 
             // 2. Минимальное ребро для каждой компоненты (вес + индекс вершины, куда идет)
             cedge->set_fill_value(Scalar::make_uint(INF_ENCODED));
             cedge->fill_with(Scalar::make_uint(INF_ENCODED));
 
+            cout << "fuck 2" << endl;
+
             for (uint v = 0; v < n; v++) {
                 // нашли компоненту вершины
+                if (v % 10000 == 0)
+                    cout << "v: " << v << '\n';
                 uint root;
                 f->get_uint(v, root);
 
@@ -204,6 +204,8 @@ namespace algos {
                     cedge->set_uint(root, edge_v);
                 }
             }
+
+            cout << "fuck 3" << endl;
 
             // 3. Добавляем рёбра в MST и объединяем компоненты
             bool added_edges = false;
@@ -253,6 +255,8 @@ namespace algos {
                 }
             }
 
+            cout << "fuck 4" << endl;
+
             // 4. Удаляем рёбра внутри компонент
             for (uint i = 0; i < n; i++) {
                 uint comp_i;
@@ -263,11 +267,15 @@ namespace algos {
                     f->get_uint(j, comp_j);
 
                     // Если вершины в одной компоненте, удаляем ребро
-                    if (comp_i == comp_j) {
-                        S->set_uint(i, j, INF_ENCODED);
+                    uint32_t foo;
+                    a->get_uint(i, j, foo);
+                    if (comp_i == comp_j && foo != INF_ENCODED) {
+                        a->set_uint(i, j, INF_ENCODED);
                     }
                 }
             }
+
+            cout << "fuck 5" << endl;
 
             // Подсчитываем количество оставшихся компонент
             const auto unique_comps = Vector::make(n, UINT);
@@ -279,6 +287,8 @@ namespace algos {
                 f->get_uint(v, comp);
                 unique_comps->set_uint(comp, 1);
             }
+
+            cout << "fuck 6" << endl;
 
             const auto scalar_count = Scalar::make_uint(0);
             exec_v_reduce(scalar_count, Scalar::make_uint(0), unique_comps, PLUS_UINT);
