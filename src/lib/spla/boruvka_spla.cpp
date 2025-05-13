@@ -155,6 +155,8 @@ namespace algos {
             f->set_uint(v, v);
         }
 
+        cout << "инициализирую матрицу S" << endl;
+
         const auto S = Matrix::make(n, n, UINT);
         S->set_fill_value(Scalar::make_uint(INF_ENCODED));
 
@@ -167,7 +169,7 @@ namespace algos {
                     S->set_uint(src, dst, encoded);
                 } else {
                     // кинуть ошибку
-                    S->set_uint(src, dst, INF_ENCODED);
+                    //S->set_uint(src, dst, INF_ENCODED);
                 }
             }
         }
@@ -176,14 +178,9 @@ namespace algos {
 
         uint nvals = n * n;
         for (int iter = 0; nvals > 0 && iter < n; iter++) {
+            cout << weight << '\n';
             edge->set_fill_value(Scalar::make_uint(INF_ENCODED));
             edge->fill_with(Scalar::make_uint(INF_ENCODED));
-
-            ref_ptr<Vector> zero_vec = Vector::make(n, UINT);
-            zero_vec->fill_with(spla::Scalar::make_uint(0));
-            const auto f1 = Vector::make(n, UINT);
-            exec_v_eadd(f1, f, zero_vec, spla::PLUS_UINT);
-            print_vector(f1);
 
             // для каждой вершины находим минимальное ребро
             exec_m_reduce_by_row(edge, S, MIN_UINT, Scalar::make_uint(INF_ENCODED));
@@ -199,7 +196,6 @@ namespace algos {
 
                 uint edge_v;
                 edge->get_uint(v, edge_v);
-                //cout << v << ' ' << root << ' ' << edge_v << '\n';
 
                 uint cedge_root;
                 cedge->get_uint(root, cedge_root);
@@ -210,6 +206,7 @@ namespace algos {
             }
 
             // 3. Добавляем рёбра в MST и объединяем компоненты
+            bool added_edges = false;
             for (uint i = 0; i < n; i++) {
                 uint comp_i;
                 f->get_uint(i, comp_i);
@@ -233,6 +230,7 @@ namespace algos {
                                 if (edge_src == cedge_i) {
                                     mst->set_int(src, dest);
                                     weight += w;
+                                    added_edges = true;
                                     break;
                                 }
                             }
@@ -286,7 +284,7 @@ namespace algos {
             exec_v_reduce(scalar_count, Scalar::make_uint(0), unique_comps, PLUS_UINT);
             nvals = scalar_count->as_uint();
 
-            if (nvals <= 1) break;
+            if (nvals <= 1 || !added_edges) break;
         }
     }
 }
