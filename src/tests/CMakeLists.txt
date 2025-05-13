@@ -39,7 +39,7 @@ target_link_libraries(${BINARY}
 )
 
 target_compile_definitions(${BINARY}
-  PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/data"
+  PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/test_data"
 )
 
 add_test(NAME MstAlgorithmTest
