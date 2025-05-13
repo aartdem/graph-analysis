@@ -4,6 +4,8 @@
 #include <fstream>
 #include <sstream>
 #include <cmath>
+#include <set>
+#include <unordered_set>
 
 using namespace std;
 using namespace spla;
@@ -33,6 +35,7 @@ namespace algos {
         n = n_input;
         edges = nnz_input;
         buffer_int = vector<int>(n);
+        adj_list.resize(n);
 
         // Создаем матрицу и заполняем бесконечностями сразу
         constexpr uint32_t WEIGHT_SHIFT = 22;
@@ -64,6 +67,9 @@ namespace algos {
 
                 a->set_uint(u, v, encoded_u_v);
                 a->set_uint(v, u, encoded_v_u);
+
+                adj_list[u].emplace_back(v);
+                adj_list[v].emplace_back(u);
             }
         }
     }
@@ -174,10 +180,9 @@ namespace algos {
         }
 
         // Компоненты, которые изменились на текущей итерации
-        std::vector<uint> modified_comps;
+        std::set<uint> modified_comps;
 
-        uint nvals = n * n;
-        for (int iter = 0; nvals > 0 && iter < n; iter++) {
+        for (int iter = 0; iter < n; iter++) {
             cout << "Weight: " << weight << ", Iteration: " << iter << '\n';
             edge->set_fill_value(Scalar::make_uint(INF_ENCODED));
             edge->fill_with(Scalar::make_uint(INF_ENCODED));
@@ -198,8 +203,6 @@ namespace algos {
                     cedge_array[root] = edge_v;
                 }
             }
-
-            cout << "fuck 3" << endl;
 
             // Очищаем список изменённых компонент
             modified_comps.clear();
@@ -236,7 +239,7 @@ namespace algos {
                         const uint new_comp = i < comp_dest ? i : comp_dest;
 
                         // Запоминаем изменённые компоненты
-                        modified_comps.push_back(new_comp);
+                        modified_comps.insert(new_comp);
 
                         // Объединяем списки вершин
                         if (new_comp != comp_i) {
@@ -263,40 +266,21 @@ namespace algos {
                 }
             }
 
-            cout << "fuck 4" << endl;
+            if (!added_edges) break;
 
-
-            uint total = 0;
-            for (const uint comp : modified_comps) {
-                total += comp_to_vertices[comp].size();
-            }
-            cout << "total: " << total << '\n';
             // Удаляем рёбра внутри компонент
             for (const uint comp : modified_comps) {
                 const auto& vertices = comp_to_vertices[comp];
+                unordered_set set_vertices(vertices.begin(), vertices.end());
 
-                // Проходим только по вершинам в компоненте
-                for (uint i : vertices) {
-                    for (uint j : vertices) {
-                        a->set_uint(i, j, INF_ENCODED);
+                for (uint i : set_vertices) {
+                    for (uint j : adj_list[i]) {
+                        if (set_vertices.contains(j)) {
+                            a->set_uint(i, j, INF_ENCODED);
+                        }
                     }
                 }
             }
-
-            cout << "fuck 5" << endl;
-
-            // Подсчитываем количество оставшихся компонент
-            uint remaining_components = 0;
-            for (uint i = 0; i < n; i++) {
-                if (!comp_to_vertices[i].empty()) {
-                    remaining_components++;
-                }
-            }
-
-            cout << "Remaining components: " << remaining_components << endl;
-
-            if (remaining_components <= 1 || !added_edges) break;
-            nvals = remaining_components;
         }
     }
 }

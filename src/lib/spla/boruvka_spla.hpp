@@ -22,6 +22,7 @@ namespace algos {
         uint64_t weight = 0;
         spla::ref_ptr<spla::Matrix> a;
         spla::ref_ptr<spla::Vector> mst;
+        std::vector<std::vector<uint32_t>> adj_list;
         std::vector<int> buffer_int;
         std::vector<float> buffer_float;
     };
