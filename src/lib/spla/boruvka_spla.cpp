@@ -158,14 +158,16 @@ namespace algos {
         constexpr uint32_t INDEX_MASK = (1 << 22) - 1;
         constexpr uint32_t INF_ENCODED = UINT32_MAX;
 
-        const auto f = Vector::make(n, UINT);
+        //const auto f = Vector::make(n, UINT);
+        std::vector<uint32_t> f_array(n);
+
         const auto edge = Vector::make(n, UINT);
         const auto cedge = Vector::make(n, UINT);
         const auto t = Vector::make(n, UINT);      // Аналог t в GraphBLAS
         const auto mask = Vector::make(n, UINT);   // Аналог mask в GraphBLAS
 
         for (uint v = 0; v < n; v++) {
-            f->set_uint(v, v);
+            f_array[v] = v;
         }
 
         std::vector<uint> parent(n);
@@ -191,8 +193,7 @@ namespace algos {
                 // нашли компоненту вершины
                 if (v % 10000 == 0)
                     cout << "v: " << v << '\n';
-                uint root;
-                f->get_uint(v, root);
+                uint root = f_array[v];
 
                 uint edge_v;
                 edge->get_uint(v, edge_v);
@@ -210,8 +211,7 @@ namespace algos {
             // 3. Добавляем рёбра в MST и объединяем компоненты
             bool added_edges = false;
             for (uint i = 0; i < n; i++) {
-                uint comp_i;
-                f->get_uint(i, comp_i);
+                uint comp_i = f_array[i];
 
                 if (i == comp_i) {  // i - корень компоненты
                     uint cedge_i;
@@ -222,8 +222,7 @@ namespace algos {
                         const uint w = cedge_i >> WEIGHT_SHIFT;
 
                         for (uint src = 0; src < n; src++) { // находим вершину с минимальным ребром в компоненте
-                            uint comp_src;
-                            f->get_uint(src, comp_src);
+                            uint comp_src = f_array[src];
 
                             if (comp_src == comp_i) {
                                 uint edge_src;
@@ -238,17 +237,15 @@ namespace algos {
                             }
                         }
 
-                        uint comp_dest;
-                        f->get_uint(dest, comp_dest);
+                        uint comp_dest = f_array[dest];
 
                         const uint new_comp = i < comp_dest ? i : comp_dest;
 
                         for (uint v = 0; v < n; v++) {
-                            uint comp_v;
-                            f->get_uint(v, comp_v);
+                            uint comp_v = f_array[v];
 
                             if (comp_v == i || comp_v == comp_dest) {
-                                f->set_uint(v, new_comp);
+                                f_array[v] = new_comp;
                             }
                         }
                     }
@@ -259,12 +256,10 @@ namespace algos {
 
             // 4. Удаляем рёбра внутри компонент
             for (uint i = 0; i < n; i++) {
-                uint comp_i;
-                f->get_uint(i, comp_i);
+                uint comp_i = f_array[i];
 
                 for (uint j = 0; j < n; j++) {
-                    uint comp_j;
-                    f->get_uint(j, comp_j);
+                    uint comp_j = f_array[j];
 
                     // Если вершины в одной компоненте, удаляем ребро
                     uint32_t foo;
@@ -283,8 +278,7 @@ namespace algos {
             unique_comps->fill_with(Scalar::make_uint(0));
 
             for (uint v = 0; v < n; v++) {
-                uint comp;
-                f->get_uint(v, comp);
+                uint comp = f_array[v];
                 unique_comps->set_uint(comp, 1);
             }
 
