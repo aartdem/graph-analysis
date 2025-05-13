@@ -158,17 +158,14 @@ namespace algos {
         constexpr uint32_t INDEX_MASK = (1 << 22) - 1;
         constexpr uint32_t INF_ENCODED = UINT32_MAX;
 
-        //const auto f = Vector::make(n, UINT);
         std::vector<uint32_t> f_array(n);
-
-        const auto edge = Vector::make(n, UINT);
-        const auto cedge = Vector::make(n, UINT);
-        const auto t = Vector::make(n, UINT);      // Аналог t в GraphBLAS
-        const auto mask = Vector::make(n, UINT);   // Аналог mask в GraphBLAS
-
         for (uint v = 0; v < n; v++) {
             f_array[v] = v;
         }
+
+        std::vector cedge_array(n, INF_ENCODED);
+
+        const auto edge = Vector::make(n, UINT);
 
         std::vector<uint> parent(n);
 
@@ -178,31 +175,20 @@ namespace algos {
             edge->set_fill_value(Scalar::make_uint(INF_ENCODED));
             edge->fill_with(Scalar::make_uint(INF_ENCODED));
 
-            cout << "fuck 1" << endl;
-
             // для каждой вершины находим минимальное ребро
             exec_m_reduce_by_row(edge, a, MIN_UINT, Scalar::make_uint(INF_ENCODED));
 
-            // 2. Минимальное ребро для каждой компоненты (вес + индекс вершины, куда идет)
-            cedge->set_fill_value(Scalar::make_uint(INF_ENCODED));
-            cedge->fill_with(Scalar::make_uint(INF_ENCODED));
-
-            cout << "fuck 2" << endl;
-
+            ranges::fill(cedge_array, INF_ENCODED);
             for (uint v = 0; v < n; v++) {
-                // нашли компоненту вершины
                 if (v % 10000 == 0)
                     cout << "v: " << v << '\n';
-                uint root = f_array[v];
+                const uint root = f_array[v];
 
                 uint edge_v;
                 edge->get_uint(v, edge_v);
 
-                uint cedge_root;
-                cedge->get_uint(root, cedge_root);
-
-                if (edge_v < cedge_root) {
-                    cedge->set_uint(root, edge_v);
+                if (edge_v < cedge_array[root]) {
+                    cedge_array[root] = edge_v;
                 }
             }
 
@@ -214,8 +200,7 @@ namespace algos {
                 uint comp_i = f_array[i];
 
                 if (i == comp_i) {  // i - корень компоненты
-                    uint cedge_i;
-                    cedge->get_uint(i, cedge_i);
+                    uint cedge_i = cedge_array[i];
 
                     if (cedge_i != INF_ENCODED) {
                         const uint dest = cedge_i & INDEX_MASK;
