@@ -39,6 +39,7 @@ namespace algos {
         constexpr uint32_t INF_ENCODED = UINT32_MAX;
 
         a = Matrix::make(n, n, UINT);
+        a->set_format(FormatMatrix::AccCsr);
         a->set_fill_value(Scalar::make_uint(INF_ENCODED));
 
         int u, v;
@@ -163,29 +164,35 @@ namespace algos {
             f_array[v] = v;
         }
 
+        const auto edge = Vector::make(n, UINT);
+        std::vector edge_array(n, INF_ENCODED);
         std::vector cedge_array(n, INF_ENCODED);
 
-        const auto edge = Vector::make(n, UINT);
+        std::vector<std::vector<uint>> comp_to_vertices(n);
+        for (uint i = 0; i < n; i++) {
+            comp_to_vertices[i].push_back(i);
+        }
 
-        std::vector<uint> parent(n);
+        // Компоненты, которые изменились на текущей итерации
+        std::vector<uint> modified_comps;
 
         uint nvals = n * n;
         for (int iter = 0; nvals > 0 && iter < n; iter++) {
-            cout << "Weight: " << weight << '\n';
+            cout << "Weight: " << weight << ", Iteration: " << iter << '\n';
             edge->set_fill_value(Scalar::make_uint(INF_ENCODED));
             edge->fill_with(Scalar::make_uint(INF_ENCODED));
 
-            // для каждой вершины находим минимальное ребро
+            // Находим минимальное ребро для каждой вершины
             exec_m_reduce_by_row(edge, a, MIN_UINT, Scalar::make_uint(INF_ENCODED));
 
+            // Находим минимальное ребро для каждой компоненты
             ranges::fill(cedge_array, INF_ENCODED);
             for (uint v = 0; v < n; v++) {
-                if (v % 10000 == 0)
-                    cout << "v: " << v << '\n';
                 const uint root = f_array[v];
 
                 uint edge_v;
                 edge->get_uint(v, edge_v);
+                edge_array[v] = edge_v;
 
                 if (edge_v < cedge_array[root]) {
                     cedge_array[root] = edge_v;
@@ -194,7 +201,10 @@ namespace algos {
 
             cout << "fuck 3" << endl;
 
-            // 3. Добавляем рёбра в MST и объединяем компоненты
+            // Очищаем список изменённых компонент
+            modified_comps.clear();
+
+            // Добавляем рёбра в MST и объединяем компоненты
             bool added_edges = false;
             for (uint i = 0; i < n; i++) {
                 uint comp_i = f_array[i];
@@ -206,32 +216,48 @@ namespace algos {
                         const uint dest = cedge_i & INDEX_MASK;
                         const uint w = cedge_i >> WEIGHT_SHIFT;
 
-                        for (uint src = 0; src < n; src++) { // находим вершину с минимальным ребром в компоненте
-                            uint comp_src = f_array[src];
-
-                            if (comp_src == comp_i) {
-                                uint edge_src;
-                                edge->get_uint(src, edge_src);
-
-                                if (edge_src == cedge_i) {
-                                    mst->set_int(src, dest);
-                                    weight += w;
-                                    added_edges = true;
-                                    break;
-                                }
+                        // Находим источник минимального ребра
+                        uint src = UINT_MAX;
+                        for (uint v : comp_to_vertices[comp_i]) {
+                            if (edge_array[v] == cedge_i) {
+                                src = v;
+                                break;
                             }
                         }
 
-                        uint comp_dest = f_array[dest];
+                        if (src != UINT_MAX) {
+                            mst->set_int(src, dest);
+                            weight += w;
+                            added_edges = true;
+                        }
 
+                        // Объединяем компоненты
+                        uint comp_dest = f_array[dest];
                         const uint new_comp = i < comp_dest ? i : comp_dest;
 
-                        for (uint v = 0; v < n; v++) {
-                            uint comp_v = f_array[v];
+                        // Запоминаем изменённые компоненты
+                        modified_comps.push_back(new_comp);
 
-                            if (comp_v == i || comp_v == comp_dest) {
-                                f_array[v] = new_comp;
-                            }
+                        // Объединяем списки вершин
+                        if (new_comp != comp_i) {
+                            comp_to_vertices[new_comp].insert(
+                                comp_to_vertices[new_comp].end(),
+                                comp_to_vertices[comp_i].begin(),
+                                comp_to_vertices[comp_i].end());
+                            comp_to_vertices[comp_i].clear();
+                        }
+
+                        if (new_comp != comp_dest) {
+                            comp_to_vertices[new_comp].insert(
+                                comp_to_vertices[new_comp].end(),
+                                comp_to_vertices[comp_dest].begin(),
+                                comp_to_vertices[comp_dest].end());
+                            comp_to_vertices[comp_dest].clear();
+                        }
+
+                        // Обновляем компоненты в f_array
+                        for (uint v : comp_to_vertices[new_comp]) {
+                            f_array[v] = new_comp;
                         }
                     }
                 }
@@ -239,17 +265,19 @@ namespace algos {
 
             cout << "fuck 4" << endl;
 
-            // 4. Удаляем рёбра внутри компонент
-            for (uint i = 0; i < n; i++) {
-                uint comp_i = f_array[i];
 
-                for (uint j = 0; j < n; j++) {
-                    uint comp_j = f_array[j];
+            uint total = 0;
+            for (const uint comp : modified_comps) {
+                total += comp_to_vertices[comp].size();
+            }
+            cout << "total: " << total << '\n';
+            // Удаляем рёбра внутри компонент
+            for (const uint comp : modified_comps) {
+                const auto& vertices = comp_to_vertices[comp];
 
-                    // Если вершины в одной компоненте, удаляем ребро
-                    uint32_t foo;
-                    a->get_uint(i, j, foo);
-                    if (comp_i == comp_j && foo != INF_ENCODED) {
+                // Проходим только по вершинам в компоненте
+                for (uint i : vertices) {
+                    for (uint j : vertices) {
                         a->set_uint(i, j, INF_ENCODED);
                     }
                 }
@@ -258,22 +286,17 @@ namespace algos {
             cout << "fuck 5" << endl;
 
             // Подсчитываем количество оставшихся компонент
-            const auto unique_comps = Vector::make(n, UINT);
-            unique_comps->set_fill_value(Scalar::make_uint(0));
-            unique_comps->fill_with(Scalar::make_uint(0));
-
-            for (uint v = 0; v < n; v++) {
-                uint comp = f_array[v];
-                unique_comps->set_uint(comp, 1);
+            uint remaining_components = 0;
+            for (uint i = 0; i < n; i++) {
+                if (!comp_to_vertices[i].empty()) {
+                    remaining_components++;
+                }
             }
 
-            cout << "fuck 6" << endl;
+            cout << "Remaining components: " << remaining_components << endl;
 
-            const auto scalar_count = Scalar::make_uint(0);
-            exec_v_reduce(scalar_count, Scalar::make_uint(0), unique_comps, PLUS_UINT);
-            nvals = scalar_count->as_uint();
-
-            if (nvals <= 1 || !added_edges) break;
+            if (remaining_components <= 1 || !added_edges) break;
+            nvals = remaining_components;
         }
     }
 }
