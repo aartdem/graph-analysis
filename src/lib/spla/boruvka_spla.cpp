@@ -85,14 +85,14 @@ namespace algos {
     // for debug
     void print_vector(const ref_ptr<Vector> &v, const std::string &name = "") {
         std::cout << "-- " << name << " --\n";
-        auto sz = Scalar::make_int(0);
+        auto sz = Scalar::make_uint(0);
         exec_v_count_mf(sz, v);
-        auto buffer_int = std::vector<int>(sz->as_int());
-        auto keys_view = MemView::make(buffer_int.data(), sz->as_int());
-        auto values_view = MemView::make(buffer_int.data(), sz->as_int());
+        auto buffer_int = std::vector<uint>(sz->as_int());
+        auto keys_view = MemView::make(buffer_int.data(), sz->as_uint());
+        auto values_view = MemView::make(buffer_int.data(), sz->as_uint());
         v->read(keys_view, values_view);
-        auto keys = static_cast<int *>(keys_view->get_buffer());
-        auto values = static_cast<int*>(values_view->get_buffer());
+        auto keys = static_cast<uint32_t *>(keys_view->get_buffer());
+        auto values = static_cast<uint32_t*>(values_view->get_buffer());
         for (int i = 0; i < sz->as_int(); i++) {
             std::cout << keys[i] << ' ' << values[i] << '\n';
         }
@@ -119,15 +119,15 @@ namespace algos {
         std::cout << "-- " << name << " --\n";
         int nnz = count_nonzero_elements(m);
 
-        auto buffer_int = std::vector<int>(nnz);
+        auto buffer_int = std::vector<uint32_t>(nnz);
         auto rows_view = MemView::make(buffer_int.data(), nnz);
         auto cols_view = MemView::make(buffer_int.data(), nnz);
         auto values_view = MemView::make(buffer_int.data(), nnz);
         m->read(rows_view, cols_view, values_view);
 
-        auto rows = static_cast<int *>(rows_view->get_buffer());
-        auto cols = static_cast<int *>(cols_view->get_buffer());
-        auto values = static_cast<int*>(values_view->get_buffer());
+        auto rows = static_cast<uint32_t *>(rows_view->get_buffer());
+        auto cols = static_cast<uint32_t *>(cols_view->get_buffer());
+        auto values = static_cast<uint32_t*>(values_view->get_buffer());
 
         for (uint i = 0; i < nnz; ++i) {
             std::cout << rows[i] << " " << cols[i] << " " << values[i] << "\n";
@@ -146,7 +146,6 @@ namespace algos {
         constexpr uint32_t INF_ENCODED = UINT32_MAX;
 
         const auto f = Vector::make(n, UINT);
-        const auto i = Vector::make(n, UINT);
         const auto edge = Vector::make(n, UINT);
         const auto cedge = Vector::make(n, UINT);
         const auto t = Vector::make(n, UINT);      // Аналог t в GraphBLAS
@@ -154,7 +153,6 @@ namespace algos {
 
         for (uint v = 0; v < n; v++) {
             f->set_uint(v, v);
-            i->set_uint(v, v);
         }
 
         const auto S = Matrix::make(n, n, UINT);
@@ -164,12 +162,12 @@ namespace algos {
             for (uint dst = 0; dst < n; dst++) {
                 uint w;
                 a->get_uint(src, dst, w);
-                if ( w >= 0 && w < 1 << 10) {
+                if ( w > 0 && w < 1 << 10) {
                     const uint32_t encoded = w << WEIGHT_SHIFT | dst;
                     S->set_uint(src, dst, encoded);
                 } else {
                     // кинуть ошибку
-                    //S->set_uint(src, dst, INF_ENCODED);
+                    S->set_uint(src, dst, INF_ENCODED);
                 }
             }
         }
@@ -180,6 +178,12 @@ namespace algos {
         for (int iter = 0; nvals > 0 && iter < n; iter++) {
             edge->set_fill_value(Scalar::make_uint(INF_ENCODED));
             edge->fill_with(Scalar::make_uint(INF_ENCODED));
+
+            ref_ptr<Vector> zero_vec = Vector::make(n, UINT);
+            zero_vec->fill_with(spla::Scalar::make_uint(0));
+            const auto f1 = Vector::make(n, UINT);
+            exec_v_eadd(f1, f, zero_vec, spla::PLUS_UINT);
+            print_vector(f1);
 
             // для каждой вершины находим минимальное ребро
             exec_m_reduce_by_row(edge, S, MIN_UINT, Scalar::make_uint(INF_ENCODED));
@@ -195,6 +199,7 @@ namespace algos {
 
                 uint edge_v;
                 edge->get_uint(v, edge_v);
+                //cout << v << ' ' << root << ' ' << edge_v << '\n';
 
                 uint cedge_root;
                 cedge->get_uint(root, cedge_root);
@@ -205,7 +210,6 @@ namespace algos {
             }
 
             // 3. Добавляем рёбра в MST и объединяем компоненты
-            print_vector(f);
             for (uint i = 0; i < n; i++) {
                 uint comp_i;
                 f->get_uint(i, comp_i);
@@ -227,7 +231,7 @@ namespace algos {
                                 edge->get_uint(src, edge_src);
 
                                 if (edge_src == cedge_i) {
-                                    mst->set_uint(src, dest);
+                                    mst->set_int(src, dest);
                                     weight += w;
                                     break;
                                 }
