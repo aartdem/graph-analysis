@@ -1,0 +1,30 @@
+name: Check Codestyle and Static Analyzer
+
+on: [ push, pull_request ]
+
+jobs:
+  clang-format-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Run code style check
+        run: |
+          sudo apt install -y clang-format
+          diff=$(clang-format --style=file --dry-run --Werror $(git ls-files -- '*.cpp' '*.hpp' '*.cu' '*.hxx'))
+          if [[ -n "$diff" ]]; then
+              echo "::group::clang-format diff"
+              echo "$diff"
+              echo "::endgroup::"
+              exit 1
+          fi
+#          echo "$diff"
+
+  #      - name: Run static analyzer
+  #        run: |
+  #          sudo apt-get install -y clang-tidy
+  #          cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+  #          find src include -name "*.cpp" | xargs clang-tidy -p build
+#  clang-tidy-check:
