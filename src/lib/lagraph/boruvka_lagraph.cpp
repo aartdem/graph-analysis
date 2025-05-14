@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <chrono>
+#include <iostream>
 #include <stdexcept>
 
 namespace algos {
@@ -44,8 +45,8 @@ namespace algos {
             row--;
             col--;
 
-            GrB_Matrix_setElement_UINT32(matrix, row, col, weight);
-            GrB_Matrix_setElement_UINT32(matrix, col, row, weight);
+            GrB_Matrix_setElement_UINT64(matrix, weight, row, col);
+            GrB_Matrix_setElement_UINT64(matrix, weight, col, row);
         }
         num_vertices = n_rows;
     }
