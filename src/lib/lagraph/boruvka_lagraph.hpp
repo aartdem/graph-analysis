@@ -7,9 +7,6 @@ namespace algos {
     class BoruvkaLagraph : public MstAlgorithm {
 
     public:
-        BoruvkaLagraph() : matrix(nullptr) {}
-        ~BoruvkaLagraph();
-
         void load_graph(const std::filesystem::path &file_path) final;
 
         std::chrono::milliseconds compute() final;
