@@ -8,7 +8,6 @@ file(GLOB_RECURSE LIB_SOURCES
         "${CMAKE_SOURCE_DIR}/deps/gunrock/third_party/mmio/mmio.c")
 
 set(SPLA_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/spla")
-set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/lagraph")
 
 add_library(algos_lib STATIC ${LIB_SOURCES})
 
@@ -28,10 +27,16 @@ add_subdirectory(${SPLA_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/spla EXCLUDE_FROM_A
 target_link_libraries(algos_lib PUBLIC spla)
 
 # Link against LAGraph and GraphBLAS
-add_subdirectory(${LAGRAPH_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/lagraph EXCLUDE_FROM_ALL)
-target_link_libraries(algos_lib PUBLIC lagraph graphblas)
+target_link_libraries(algos_lib PUBLIC lagraph_headers graphblas)
+# Link against the LAGraph shared library and our MSF implementation
+target_link_libraries(algos_lib PUBLIC LAGraph lagraph_msf)
 
 target_include_directories(algos_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(algos_lib PUBLIC 
+  ${CMAKE_SOURCE_DIR}/deps/LAGraph/include
+  ${CMAKE_SOURCE_DIR}/deps/LAGraph/experimental
+  ${CMAKE_SOURCE_DIR}/deps/GraphBLAS/Include)
+
 if(USE_CUDA)
   target_include_directories(algos_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/deps/gunrock/include

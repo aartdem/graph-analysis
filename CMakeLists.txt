@@ -39,29 +39,45 @@ if(NOT cmake_modules_POPULATED)
   FetchContent_MakeAvailable(cmake_modules)
 endif()
 
+# GraphBLAS configuration
 set(GRAPHBLAS_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/GraphBLAS")
 set(GRAPHBLAS_INCLUDE_DIR "${GRAPHBLAS_SRC_DIR}/Include")
+set(GRAPHBLAS_LIB_DIR "${CMAKE_SOURCE_DIR}/deps/GraphBLAS/build")
 
 add_library(graphblas INTERFACE)
 target_include_directories(graphblas INTERFACE ${GRAPHBLAS_INCLUDE_DIR})
+target_link_directories(graphblas INTERFACE ${GRAPHBLAS_LIB_DIR})
 
+# LAGraph configuration
 set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph")
 set(LAGRAPH_INCLUDE_DIR "${LAGRAPH_SRC_DIR}/include")
 set(LAGRAPH_EXPERIMENTAL_DIR "${LAGRAPH_SRC_DIR}/experimental")
+set(LAGRAPH_LIB_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph/build/src")
 
-add_library(lagraph INTERFACE)
-target_include_directories(lagraph INTERFACE 
+# Create a custom LAGraph library target that links to the pre-built libraries
+add_library(LAGraph SHARED IMPORTED)
+set_target_properties(LAGraph PROPERTIES 
+  IMPORTED_LOCATION "${LAGRAPH_LIB_DIR}/liblagraph.dylib"
+  INTERFACE_INCLUDE_DIRECTORIES "${LAGRAPH_INCLUDE_DIR}")
+
+# Create an interface target for LAGraph headers and functionality
+add_library(lagraph_headers INTERFACE)
+target_include_directories(lagraph_headers INTERFACE 
   ${LAGRAPH_INCLUDE_DIR}
-  ${LAGRAPH_EXPERIMENTAL_DIR}/include)
-target_link_libraries(lagraph INTERFACE graphblas)
+  ${LAGRAPH_EXPERIMENTAL_DIR})
+target_link_libraries(lagraph_headers INTERFACE graphblas LAGraph)
 
-# Configure LAGraph library build flags
-set(LAGRAPH_BUILD_MSF ON CACHE BOOL "Enable Minimum Spanning Forest algorithm" FORCE)
-set(BUILD_TESTING OFF CACHE BOOL "Disable LAGraph tests" FORCE)
-set(BUILD_SHARED_LIBS ON CACHE BOOL "Build LAGraph as shared library" FORCE)
+# Copy the MSF implementation to make it available for linking
+file(COPY ${LAGRAPH_EXPERIMENTAL_DIR}/algorithm/LAGraph_msf.c
+     DESTINATION ${CMAKE_BINARY_DIR}/LAGraph_msf)
 
-# Add LAGraph as a subdirectory to build it
-add_subdirectory(${LAGRAPH_SRC_DIR} ${CMAKE_BINARY_DIR}/LAGraph EXCLUDE_FROM_ALL)
+# Create our own implementation of the MSF function to use in our code
+add_library(lagraph_msf STATIC ${CMAKE_BINARY_DIR}/LAGraph_msf/LAGraph_msf.c)
+target_include_directories(lagraph_msf PRIVATE 
+  ${LAGRAPH_INCLUDE_DIR}
+  ${LAGRAPH_EXPERIMENTAL_DIR}
+  ${GRAPHBLAS_INCLUDE_DIR})
+target_link_libraries(lagraph_msf PUBLIC LAGraph graphblas)
 
 if(USE_CUDA)
   FetchContent_Declare(
