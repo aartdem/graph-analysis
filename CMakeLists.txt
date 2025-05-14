@@ -39,7 +39,7 @@ if(NOT cmake_modules_POPULATED)
   FetchContent_MakeAvailable(cmake_modules)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${cmake_modules_SOURCE_DIR}")
+#list(APPEND CMAKE_MODULE_PATH "${cmake_modules_SOURCE_DIR}")
 
 if(USE_CUDA)
   FetchContent_Declare(

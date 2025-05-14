@@ -122,7 +122,7 @@ int main() {
 
     // Find all .mtx files in the data directory
     vector<string> graph_files;
-    for (const auto& entry : filesystem::directory_iterator("data")) {
+    for (const auto& entry : filesystem::directory_iterator(DATA_DIR)) {
         if (entry.path().extension() == ".mtx") {
             graph_files.push_back(entry.path().string());
         }
@@ -156,6 +156,6 @@ int main() {
 
     string output_file = "benchmark_results.csv";
     save_results_to_csv(all_results, output_file);
-    
+
     return 0;
 }
