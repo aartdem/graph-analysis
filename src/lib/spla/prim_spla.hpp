@@ -26,7 +26,7 @@ namespace algos {
 
         using clock = std::chrono::steady_clock;
 
-        int n;
+        uint n;
         int edges_count;
         bool enabled_log = false;
         const unsigned int INF = UINT32_MAX;
