@@ -79,25 +79,30 @@ namespace algos {
 
         GrB_Index nvals;
         GrB_Matrix_nvals(&nvals, T);
-
-        size_t size = (size_t)nvals;
-
-        std::vector<GrB_Index> I(size);
-        std::vector<GrB_Index> J(size);
-        std::vector<uint64_t> X(size);
-
-        GrB_Matrix_extractTuples_UINT64(I.data(), J.data(), X.data(), &nvals, T);
+        
+        // Use raw arrays instead of std::vector to avoid type conversion issues
+        GrB_Index* I = new GrB_Index[nvals];
+        GrB_Index* J = new GrB_Index[nvals];
+        uint64_t* X = new uint64_t[nvals];
+        
+        // Extract tuples into raw arrays
+        GrB_Matrix_extractTuples_UINT64(I, J, X, &nvals, T);
 
         std::vector<std::vector<int>> adj(n);
-        for (size_t k = 0; k < size; k++) {
+        for (GrB_Index k = 0; k < nvals; k++) {
             int i = (int)I[k];
             int j = (int)J[k];
             adj[i].push_back(j);
             adj[j].push_back(i);
         }
+        
+        // Free memory
+        delete[] I;
+        delete[] J;
+        delete[] X;
 
         std::vector<bool> visited(n, false);
-
+        
         auto dfs_function = [&visited, &parent, &adj](auto&& self, int v, int p) -> void {
             visited[v] = true;
             parent[v] = p;
