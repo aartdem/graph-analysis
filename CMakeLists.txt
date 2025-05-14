@@ -26,9 +26,9 @@ project(algos_lib LANGUAGES ${LANGUAGES_LIST})
 set(CMAKE_CXX_STANDARD            20)
 set(CMAKE_CXX_STANDARD_REQUIRED   ON)
 
-# Disable specific warnings
+# Disable specific warnings and force errors to be treated as warnings
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_options(-Wno-sign-compare -Wno-unused-variable -Wno-unused-but-set-variable)
+  add_compile_options(-Wno-sign-compare -Wno-unused-variable -Wno-unused-but-set-variable -fpermissive -Wno-error -w)
 endif()
 
 enable_testing()

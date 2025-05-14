@@ -75,25 +75,28 @@ namespace algos {
     }
 
     std::vector<int> extract_parent(GrB_Matrix T, int n) {
-        std::vector parent(n, -1);
+        std::vector<int> parent(n, -1);
 
         GrB_Index nvals;
         GrB_Matrix_nvals(&nvals, T);
 
-        std::vector<GrB_Index> I(nvals);
-        std::vector<GrB_Index> J(nvals);
-        std::vector<uint64_t> X(nvals);
+        size_t size = (size_t)nvals;
+
+        std::vector<GrB_Index> I(size);
+        std::vector<GrB_Index> J(size);
+        std::vector<uint64_t> X(size);
+
         GrB_Matrix_extractTuples_UINT64(I.data(), J.data(), X.data(), &nvals, T);
 
         std::vector<std::vector<int>> adj(n);
-        for (GrB_Index k = 0; k < nvals; k++) {
-            int i = I[k];
-            int j = J[k];
+        for (size_t k = 0; k < size; k++) {
+            int i = (int)I[k];
+            int j = (int)J[k];
             adj[i].push_back(j);
             adj[j].push_back(i);
         }
 
-        std::vector visited(n, false);
+        std::vector<bool> visited(n, false);
 
         auto dfs_function = [&visited, &parent, &adj](auto&& self, int v, int p) -> void {
             visited[v] = true;
