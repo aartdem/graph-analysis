@@ -11,7 +11,6 @@
 
 #include "spla/prim_spla.hpp"
 #include "spla/boruvka_spla.hpp"
-#include "lagraph/boruvka_lagraph.hpp"
 
 #if defined(HAVE_CUDA) || defined(CUDA_ENABLED)
   #define USE_GUNROCK 1
@@ -56,7 +55,7 @@ BenchmarkResult run_benchmark(const string& algo_name, const string& graph_path,
         algorithm->load_graph(graph_path);
 
         auto time = algorithm->compute();
-        double seconds = time.count() / 1000.0; // Convert milliseconds to seconds
+        double seconds = time.count();
         result.execution_times.push_back(seconds);
         
         cout << " " << fixed << setprecision(2) << seconds << " s" << endl;
@@ -103,9 +102,6 @@ int main() {
     vector<pair<string, function<BenchmarkResult(const string&, int)>>> algorithms = {
         {"BoruvkaSpla", [](const string& graph_path, int num_runs) { 
             return run_benchmark<BoruvkaSpla>("BoruvkaSpla", graph_path, num_runs); 
-        }},
-        {"BoruvkaLagraph", [](const string& graph_path, int num_runs) { 
-            return run_benchmark<BoruvkaLagraph>("BoruvkaLagraph", graph_path, num_runs); 
         }}
     };
 

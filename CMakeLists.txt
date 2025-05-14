@@ -47,10 +47,21 @@ target_include_directories(graphblas INTERFACE ${GRAPHBLAS_INCLUDE_DIR})
 
 set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph")
 set(LAGRAPH_INCLUDE_DIR "${LAGRAPH_SRC_DIR}/include")
+set(LAGRAPH_EXPERIMENTAL_DIR "${LAGRAPH_SRC_DIR}/experimental")
 
 add_library(lagraph INTERFACE)
-target_include_directories(lagraph INTERFACE ${LAGRAPH_INCLUDE_DIR})
+target_include_directories(lagraph INTERFACE 
+  ${LAGRAPH_INCLUDE_DIR}
+  ${LAGRAPH_EXPERIMENTAL_DIR}/include)
 target_link_libraries(lagraph INTERFACE graphblas)
+
+# Configure LAGraph library build flags
+set(LAGRAPH_BUILD_MSF ON CACHE BOOL "Enable Minimum Spanning Forest algorithm" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "Disable LAGraph tests" FORCE)
+set(BUILD_SHARED_LIBS ON CACHE BOOL "Build LAGraph as shared library" FORCE)
+
+# Add LAGraph as a subdirectory to build it
+add_subdirectory(${LAGRAPH_SRC_DIR} ${CMAKE_BINARY_DIR}/LAGraph EXCLUDE_FROM_ALL)
 
 if(USE_CUDA)
   FetchContent_Declare(

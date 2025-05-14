@@ -8,6 +8,7 @@ file(GLOB_RECURSE LIB_SOURCES
         "${CMAKE_SOURCE_DIR}/deps/gunrock/third_party/mmio/mmio.c")
 
 set(SPLA_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/spla")
+set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/lagraph")
 
 add_library(algos_lib STATIC ${LIB_SOURCES})
 
@@ -26,13 +27,11 @@ set(SPLA_BUILD_OPENCL ON CACHE BOOL "Build library with opencl backend" FORCE)
 add_subdirectory(${SPLA_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/spla EXCLUDE_FROM_ALL)
 target_link_libraries(algos_lib PUBLIC spla)
 
+# Link against LAGraph and GraphBLAS
+add_subdirectory(${LAGRAPH_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/lagraph EXCLUDE_FROM_ALL)
 target_link_libraries(algos_lib PUBLIC lagraph graphblas)
 
 target_include_directories(algos_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(algos_lib PUBLIC 
-  ${CMAKE_SOURCE_DIR}/deps/LAGraph/include
-  ${CMAKE_SOURCE_DIR}/deps/GraphBLAS/Include)
-
 if(USE_CUDA)
   target_include_directories(algos_lib PUBLIC
     ${CMAKE_SOURCE_DIR}/deps/gunrock/include

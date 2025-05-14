@@ -63,6 +63,11 @@ namespace tests {
         return new algos::BoruvkaSpla();
     }
 
+    template<>
+    algos::MstAlgorithm *create_mst_algo<algos::BoruvkaLagraph>() {
+        return new algos::BoruvkaLagraph();
+    }
+
     template<typename T>
     class MstAlgorithmTest : public ::testing::Test {
     protected:
