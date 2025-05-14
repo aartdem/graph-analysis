@@ -58,8 +58,6 @@ namespace algos {
     }
 
     void BoruvkaLagraph::compute_() {
-        GrB_Matrix mst_matrix;
-
         char msg[256];
         LAGraph_msf(&mst_matrix, matrix, false, msg);
 
