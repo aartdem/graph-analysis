@@ -2,15 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 
 option(USE_CUDA "Enable CUDA support" ON)
 
-# Detect platform and set library extension
-if(APPLE)
-  set(LIB_EXT "dylib")
-elseif(UNIX AND NOT APPLE)
-  set(LIB_EXT "so")
-elseif(WIN32)
-  set(LIB_EXT "dll")
-endif()
-
 if(USE_CUDA)
   find_package(CUDAToolkit QUIET)
   if(CUDAToolkit_FOUND)
@@ -34,11 +25,6 @@ project(algos_lib LANGUAGES ${LANGUAGES_LIST})
 
 set(CMAKE_CXX_STANDARD            20)
 set(CMAKE_CXX_STANDARD_REQUIRED   ON)
-
-# Disable specific warnings and force errors to be treated as warnings
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-  add_compile_options(-Wno-sign-compare -Wno-unused-variable -Wno-unused-but-set-variable -fpermissive -Wno-error -w)
-endif()
 
 enable_testing()
 
@@ -66,7 +52,7 @@ target_link_directories(graphblas INTERFACE ${GRAPHBLAS_LIB_DIR})
 # Для прямой линковки с GraphBLAS - создаем импортированную библиотеку
 add_library(GraphBLAS SHARED IMPORTED)
 set_target_properties(GraphBLAS PROPERTIES
-  IMPORTED_LOCATION "${GRAPHBLAS_LIB_DIR}/libgraphblas.${LIB_EXT}"
+  IMPORTED_LOCATION "${GRAPHBLAS_LIB_DIR}/libgraphblas.dylib"
   INTERFACE_INCLUDE_DIRECTORIES "${GRAPHBLAS_INCLUDE_DIR}")
 
 # LAGraph configuration
@@ -78,7 +64,7 @@ set(LAGRAPH_LIB_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph/build/src")
 # Create a custom LAGraph library target that links to the pre-built libraries
 add_library(LAGraph SHARED IMPORTED)
 set_target_properties(LAGraph PROPERTIES 
-  IMPORTED_LOCATION "${LAGRAPH_LIB_DIR}/liblagraph.${LIB_EXT}"
+  IMPORTED_LOCATION "${LAGRAPH_LIB_DIR}/liblagraph.dylib"
   INTERFACE_INCLUDE_DIRECTORIES "${LAGRAPH_INCLUDE_DIR}")
 
 # Create an interface target for LAGraph headers and functionality
