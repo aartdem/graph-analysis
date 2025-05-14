@@ -15,7 +15,7 @@ public:
   ~PrimGunrock() override;
 
   void load_graph(const std::filesystem::path &file_path) override;
-  std::chrono::seconds compute() override;
+  std::chrono::milliseconds compute() override;
   Tree get_result() override;
 
   using vertex_t = int;

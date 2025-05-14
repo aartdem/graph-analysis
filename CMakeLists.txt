@@ -53,6 +53,7 @@ target_include_directories(lagraph INTERFACE ${LAGRAPH_INCLUDE_DIR})
 target_link_libraries(lagraph INTERFACE graphblas)
 
 if(USE_CUDA)
+list(APPEND CMAKE_MODULE_PATH "${cmake_modules_SOURCE_DIR}")
   FetchContent_Declare(
     gunrock
     GIT_REPOSITORY https://github.com/gunrock/gunrock.git

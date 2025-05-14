@@ -163,7 +163,7 @@ void BoruvkaGunrock::load_graph(const std::filesystem::path &file_path) {
   dev_->d_weight = h_w;
 }
 
-std::chrono::seconds BoruvkaGunrock::compute() {
+std::chrono::milliseconds BoruvkaGunrock::compute() {
   mst_edges.clear();
   auto start = std::chrono::steady_clock::now();
   if (num_vertices == 0)
@@ -314,7 +314,7 @@ std::chrono::seconds BoruvkaGunrock::compute() {
     merged = true; // if merges occurred, continue the loop
   }
   auto end = std::chrono::steady_clock::now();
-  return std::chrono::duration_cast<std::chrono::seconds>(end - start);
+  return std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
 }
 
 Tree BoruvkaGunrock::get_result() {
