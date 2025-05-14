@@ -20,6 +20,10 @@
   #define USE_GUNROCK 0
 #endif
 
+#ifndef DATA_DIR
+  #define DATA_DIR "data"
+#endif
+
 using namespace std;
 using namespace algos;
 
@@ -101,9 +105,6 @@ int main() {
 
     // List of algorithms to benchmark
     vector<pair<string, function<BenchmarkResult(const string&, int)>>> algorithms = {
-        {"PrimSpla", [](const string& graph_path, int num_runs) { 
-            return run_benchmark<PrimSpla>("PrimSpla", graph_path, num_runs); 
-        }},
         {"BoruvkaSpla", [](const string& graph_path, int num_runs) { 
             return run_benchmark<BoruvkaSpla>("BoruvkaSpla", graph_path, num_runs); 
         }}
@@ -118,7 +119,7 @@ int main() {
         return run_benchmark<PrimGunrock>("PrimGunrock", graph_path, num_runs); 
     }});
 #endif
-    
+
     // Find all .mtx files in the data directory
     vector<string> graph_files;
     for (const auto& entry : filesystem::directory_iterator("data")) {

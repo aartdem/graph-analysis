@@ -53,9 +53,6 @@ namespace algos {
             if (u < 0 || v < 0 || u > n || v > n) {
                 throw runtime_error("Invalid graph, incorrect vertex numbers");
             }
-            if (w <= 0) {
-                throw runtime_error("Invalid graph, negative edges");
-            }
             if (w >= (1 << 10)) {
                 throw runtime_error("Edge weight too large, max is 1023");
             }

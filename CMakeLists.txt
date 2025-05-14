@@ -1,9 +1,7 @@
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.20)
 
-# Опция для включения/отключения CUDA
 option(USE_CUDA "Enable CUDA support" ON)
 
-# Поиск CUDA только если опция включена
 if(USE_CUDA)
   find_package(CUDAToolkit QUIET)
   if(CUDAToolkit_FOUND)
@@ -43,7 +41,6 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${cmake_modules_SOURCE_DIR}")
 
-# Загружаем Gunrock только если CUDA доступен
 if(USE_CUDA)
   FetchContent_Declare(
     gunrock
