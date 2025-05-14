@@ -26,6 +26,11 @@ project(algos_lib LANGUAGES ${LANGUAGES_LIST})
 set(CMAKE_CXX_STANDARD            20)
 set(CMAKE_CXX_STANDARD_REQUIRED   ON)
 
+# Disable specific warnings
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  add_compile_options(-Wno-sign-compare -Wno-unused-variable -Wno-unused-but-set-variable)
+endif()
+
 enable_testing()
 
 include(FetchContent)
