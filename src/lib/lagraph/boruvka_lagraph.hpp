@@ -20,6 +20,6 @@ namespace algos {
         uint64_t weight = 0;
         GrB_Matrix matrix;
         GrB_Matrix mst_matrix;
-        int num_vertices;
+        uint num_vertices;
     };
 }
