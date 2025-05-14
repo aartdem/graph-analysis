@@ -10,6 +10,6 @@ namespace algos {
 
         virtual void load_graph(const std::filesystem::path &path) = 0;
 
-        virtual std::chrono::seconds compute() = 0;
+        virtual std::chrono::milliseconds compute() = 0;
     };
 };

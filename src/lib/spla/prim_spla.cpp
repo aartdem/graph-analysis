@@ -71,11 +71,11 @@ namespace algos {
 
     using clock = std::chrono::steady_clock;
 
-    std::chrono::seconds PrimSpla::compute() {
+    std::chrono::milliseconds PrimSpla::compute() {
         auto start = clock::now();
         compute_();
         auto end = clock::now();
-        return std::chrono::duration_cast<std::chrono::seconds>(end - start);
+        return std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     }
 
 //    void PrimSpla::copy_vector(const spla::ref_ptr<spla::Vector> &from, const spla::ref_ptr<spla::Vector> &to) {

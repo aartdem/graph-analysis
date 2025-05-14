@@ -70,11 +70,11 @@ namespace algos {
         }
     }
 
-    chrono::seconds BoruvkaSpla::compute() {
+    chrono::milliseconds BoruvkaSpla::compute() {
         const auto start = clock::now();
         compute_();
         const auto end = clock::now();
-        return chrono::duration_cast<chrono::seconds>(end - start);
+        return chrono::duration_cast<chrono::milliseconds>(end - start);
     }
 
     Tree BoruvkaSpla::get_result() {

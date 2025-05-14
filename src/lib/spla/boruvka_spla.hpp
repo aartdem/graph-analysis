@@ -9,7 +9,7 @@ namespace algos {
     public:
         void load_graph(const std::filesystem::path &file_path) final;
 
-        std::chrono::seconds compute() final;
+        std::chrono::milliseconds compute() final;
 
         Tree get_result() final;
 
