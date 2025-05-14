@@ -27,9 +27,9 @@ add_subdirectory(${SPLA_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/spla EXCLUDE_FROM_A
 target_link_libraries(algos_lib PUBLIC spla)
 
 # Link against LAGraph and GraphBLAS
-target_link_libraries(algos_lib PUBLIC lagraph_headers graphblas)
-# Link against the LAGraph shared library and our MSF implementation
-target_link_libraries(algos_lib PUBLIC LAGraph lagraph_msf)
+target_link_libraries(algos_lib PUBLIC lagraph_headers)
+# Link against the LAGraph shared library, GraphBLAS library, and our MSF implementation
+target_link_libraries(algos_lib PUBLIC LAGraph GraphBLAS lagraph_msf)
 
 target_include_directories(algos_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(algos_lib PUBLIC 

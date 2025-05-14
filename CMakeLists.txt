@@ -44,9 +44,16 @@ set(GRAPHBLAS_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/GraphBLAS")
 set(GRAPHBLAS_INCLUDE_DIR "${GRAPHBLAS_SRC_DIR}/Include")
 set(GRAPHBLAS_LIB_DIR "${CMAKE_SOURCE_DIR}/deps/GraphBLAS/build")
 
+# Создаем цель для GraphBLAS
 add_library(graphblas INTERFACE)
 target_include_directories(graphblas INTERFACE ${GRAPHBLAS_INCLUDE_DIR})
 target_link_directories(graphblas INTERFACE ${GRAPHBLAS_LIB_DIR})
+
+# Для прямой линковки с GraphBLAS - создаем импортированную библиотеку
+add_library(GraphBLAS SHARED IMPORTED)
+set_target_properties(GraphBLAS PROPERTIES
+  IMPORTED_LOCATION "${GRAPHBLAS_LIB_DIR}/libgraphblas.dylib"
+  INTERFACE_INCLUDE_DIRECTORIES "${GRAPHBLAS_INCLUDE_DIR}")
 
 # LAGraph configuration
 set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph")
@@ -67,17 +74,25 @@ target_include_directories(lagraph_headers INTERFACE
   ${LAGRAPH_EXPERIMENTAL_DIR})
 target_link_libraries(lagraph_headers INTERFACE graphblas LAGraph)
 
-# Copy the MSF implementation to make it available for linking
+# Create a directory for MSF implementation and required headers
+file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/LAGraph_msf)
+
+# Copy the required files
 file(COPY ${LAGRAPH_EXPERIMENTAL_DIR}/algorithm/LAGraph_msf.c
+     DESTINATION ${CMAKE_BINARY_DIR}/LAGraph_msf)
+file(COPY ${LAGRAPH_SRC_DIR}/src/utility/LG_internal.h
      DESTINATION ${CMAKE_BINARY_DIR}/LAGraph_msf)
 
 # Create our own implementation of the MSF function to use in our code
 add_library(lagraph_msf STATIC ${CMAKE_BINARY_DIR}/LAGraph_msf/LAGraph_msf.c)
 target_include_directories(lagraph_msf PRIVATE 
+  ${CMAKE_BINARY_DIR}/LAGraph_msf
   ${LAGRAPH_INCLUDE_DIR}
   ${LAGRAPH_EXPERIMENTAL_DIR}
   ${GRAPHBLAS_INCLUDE_DIR})
-target_link_libraries(lagraph_msf PUBLIC LAGraph graphblas)
+target_compile_definitions(lagraph_msf PRIVATE LAGRAPH_SUITESPARSE=1)
+# Прямая ссылка на GraphBLAS для lagraph_msf
+target_link_libraries(lagraph_msf PUBLIC LAGraph GraphBLAS)
 
 if(USE_CUDA)
   FetchContent_Declare(

@@ -54,6 +54,7 @@ target_link_libraries(${BINARY}
   PRIVATE algos_lib
   PRIVATE GTest::gtest_main
   PRIVATE LAGraph  # Link directly with the LAGraph imported library
+  PRIVATE GraphBLAS  # Link directly with GraphBLAS
   PRIVATE lagraph_msf  # Add our MSF implementation
 )
 
