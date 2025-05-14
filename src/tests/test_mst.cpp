@@ -92,7 +92,7 @@ namespace tests {
             this->algo->compute();
             auto res = this->algo->get_result();
             ASSERT_FLOAT_EQ(test_case.expected_weight, res.weight);
-            //ASSERT_TRUE(is_tree_or_forest(res.parent));
+            ASSERT_TRUE(is_tree_or_forest(res.parent));
         }
     }
 }

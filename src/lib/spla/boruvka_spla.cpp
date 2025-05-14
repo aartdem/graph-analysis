@@ -53,9 +53,6 @@ namespace algos {
             if (u < 0 || v < 0 || u > n || v > n) {
                 throw runtime_error("Invalid graph, incorrect vertex numbers");
             }
-            if (w <= 0) {
-                throw runtime_error("Invalid graph, negative edges");
-            }
             if (w >= (1 << 10)) {
                 throw runtime_error("Edge weight too large, max is 1023");
             }
@@ -73,11 +70,11 @@ namespace algos {
         }
     }
 
-    chrono::seconds BoruvkaSpla::compute() {
+    chrono::milliseconds BoruvkaSpla::compute() {
         const auto start = clock::now();
         compute_();
         const auto end = clock::now();
-        return chrono::duration_cast<chrono::seconds>(end - start);
+        return chrono::duration_cast<chrono::milliseconds>(end - start);
     }
 
     Tree BoruvkaSpla::get_result() {
