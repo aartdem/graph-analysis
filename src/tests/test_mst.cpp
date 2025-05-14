@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 #include "common/mst_algorithm.hpp"
+#include "lagraph/boruvka_lagraph.hpp"
 #include "spla/boruvka_spla.hpp"
 #include "spla/prim_spla.hpp"
 
@@ -62,6 +63,11 @@ namespace tests {
         return new algos::BoruvkaSpla();
     }
 
+    template<>
+    algos::MstAlgorithm *create_mst_algo<algos::BoruvkaLagraph>() {
+        return new algos::BoruvkaLagraph();
+    }
+
     template<typename T>
     class MstAlgorithmTest : public ::testing::Test {
     protected:
@@ -72,7 +78,7 @@ namespace tests {
         algos::MstAlgorithm *const algo;
     };
 
-    using AlgosTypes = ::testing::Types<algos::PrimSpla, algos::BoruvkaSpla>; // extend this with other MST algorimths
+    using AlgosTypes = ::testing::Types<algos::BoruvkaSpla, algos::PrimSpla, algos::BoruvkaLagraph>; // extend this with other MST algorimths
     TYPED_TEST_SUITE(MstAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {

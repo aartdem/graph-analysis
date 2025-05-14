@@ -17,7 +17,7 @@ namespace algos {
         void compute_();
 
         std::unique_ptr<Tree> tree = nullptr;
-        int n;
+        uint n;
         int edges;
         uint64_t weight = 0;
         spla::ref_ptr<spla::Matrix> a;

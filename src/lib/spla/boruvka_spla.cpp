@@ -133,7 +133,7 @@ namespace algos {
 
     void print_matrix(const ref_ptr<Matrix>& m, const std::string& name = "") {
         std::cout << "-- " << name << " --\n";
-        int nnz = count_nonzero_elements(m);
+        uint nnz = (uint)count_nonzero_elements(m);
 
         auto buffer_int = std::vector<uint32_t>(nnz);
         auto rows_view = MemView::make(buffer_int.data(), nnz);
