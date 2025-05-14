@@ -35,7 +35,7 @@ MstAlgorithm* create_algorithm() {
 struct BenchmarkResult {
     string algorithm_name;
     string graph_name;
-    vector<double> execution_times; // in seconds
+    vector<double> execution_times; // in milliseconds
 };
 
 template <typename AlgoType>
