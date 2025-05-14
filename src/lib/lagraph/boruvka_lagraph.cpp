@@ -61,7 +61,7 @@ namespace algos {
         GrB_Matrix mst_matrix;
 
         char msg[256];
-        LAGraph_msf(&mst_matrix, matrix, true, msg);
+        LAGraph_msf(&mst_matrix, matrix, false, msg);
 
         GrB_Matrix_reduce_UINT64(
             &weight,
@@ -71,13 +71,48 @@ namespace algos {
             GrB_NULL
         );
 
-        GrB_Matrix_free(&mst_matrix);
+        //GrB_Matrix_free(&mst_matrix);
+    }
+
+    std::vector<int> extract_parent(GrB_Matrix T, int n) {
+        std::vector<int> parent(n, -1);
+
+        GrB_Index nvals;
+        GrB_Matrix_nvals(&nvals, T);
+
+        std::vector<GrB_Index> I(nvals), J(nvals);
+        std::vector<uint64_t> X(nvals);
+        GrB_Matrix_extractTuples_UINT64(I.data(), J.data(), X.data(), &nvals, T);
+
+        std::vector<std::vector<int>> adj(n);
+        for (GrB_Index k = 0; k < nvals; k++) {
+            int i = I[k], j = J[k];
+            adj[i].push_back(j);
+            adj[j].push_back(i);
+        }
+
+        std::vector<bool> visited(n, false);
+        for (int i = 0; i < n; i++) {
+            if (!visited[i]) {
+                std::function<void(int, int)> dfs = [&](int v, int p) {
+                    visited[v] = true;
+                    parent[v] = p;
+                    for (int u : adj[v]) {
+                        if (!visited[u]) {
+                            dfs(u, v);
+                        }
+                    }
+                };
+                dfs(i, -1);
+            }
+        }
+
+        return parent;
     }
 
     Tree BoruvkaLagraph::get_result() {
-        if (!tree) {
-            throw std::runtime_error("Computation not done yet");
-        }
-        return *tree;
+        auto parent = extract_parent(mst_matrix, num_vertices);
+        GrB_Matrix_free(&mst_matrix);
+        return Tree{num_vertices, parent, weight};
     }
 }
