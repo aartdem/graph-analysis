@@ -5,3 +5,4 @@
 [submodule "deps/gunrock"]
 	path = deps/gunrock
 	url = https://github.com/gunrock/gunrock.git
+	branch = main
