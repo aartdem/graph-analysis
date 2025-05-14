@@ -87,7 +87,8 @@ namespace algos {
 
         std::vector<std::vector<int>> adj(n);
         for (GrB_Index k = 0; k < nvals; k++) {
-            int i = I[k], j = J[k];
+            int i = I[k];
+            int j = J[k];
             adj[i].push_back(j);
             adj[j].push_back(i);
         }
