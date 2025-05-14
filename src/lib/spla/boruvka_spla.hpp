@@ -1,6 +1,6 @@
 #pragma once
 
-#include <spla.hpp>
+#include<spla.hpp>
 #include "common/mst_algorithm.hpp"
 
 namespace algos {

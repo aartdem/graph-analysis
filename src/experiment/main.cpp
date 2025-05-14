@@ -39,28 +39,23 @@ struct BenchmarkResult {
 };
 
 template <typename AlgoType>
-BenchmarkResult run_benchmark(const string& algo_name, const string& graph_path, int num_runs = 20) {
+BenchmarkResult run_benchmark(const string& algo_name, const string& graph_path, const int num_runs = 20) {
     BenchmarkResult result;
     result.algorithm_name = algo_name;
     result.graph_name = filesystem::path(graph_path).filename().string();
 
-    const unique_ptr<MstAlgorithm> algorithm(create_algorithm<AlgoType>());
-
     cout << "Running " << algo_name << " on " << result.graph_name << "..." << endl;
 
-    algorithm->load_graph(graph_path);
-
-    // Warmup run
-    cout << "  Warmup run..." << endl;
-    algorithm->compute();
-
-    // Perform benchmark runs
     result.execution_times.reserve(num_runs);
     for (int i = 0; i < num_runs; ++i) {
+        const unique_ptr<MstAlgorithm> algorithm(create_algorithm<AlgoType>());
+
         cout << "  Run " << (i + 1) << "/" << num_runs << "..." << flush;
 
+        algorithm->load_graph(graph_path);
+
         auto time = algorithm->compute();
-        double seconds = time.count(); // Use seconds
+        double seconds = time.count();
         result.execution_times.push_back(seconds);
 
         cout << " " << fixed << setprecision(2) << seconds << " s" << endl;
@@ -68,6 +63,7 @@ BenchmarkResult run_benchmark(const string& algo_name, const string& graph_path,
 
     return result;
 }
+
 
 void save_results_to_csv(const vector<BenchmarkResult>& results, const string& output_file) {
     ofstream file(output_file);
