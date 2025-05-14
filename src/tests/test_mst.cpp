@@ -72,7 +72,7 @@ namespace tests {
         algos::MstAlgorithm *const algo;
     };
 
-    using AlgosTypes = ::testing::Types<algos::BoruvkaSpla>; // extend this with other MST algorimths
+    using AlgosTypes = ::testing::Types<algos::PrimSpla, algos::BoruvkaSpla>; // extend this with other MST algorimths
     TYPED_TEST_SUITE(MstAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {

@@ -29,15 +29,12 @@ namespace algos {
         buffer2 = std::vector<unsigned int>(n);
         edges_count = nnz_input;
         a = spla::Matrix::make(n, n, spla::UINT);
-//        a->set_format(spla::FormatMatrix::AccCsr);
+        a->set_format(spla::FormatMatrix::AccCsr);
         a->set_fill_value(spla::Scalar::make_uint(INF));
 
         int u, v;
         int w;
         for (int i = 0; i < nnz_input; ++i) {
-            if (i % 1000000 == 0) {
-                std::cout << "readed: " << i << '\n';
-            }
             input >> u >> v >> w;
             u--;
             v--;
@@ -65,7 +62,7 @@ namespace algos {
         auto keys = (unsigned int *) keys_view->get_buffer();
         auto values = (unsigned int *) values_view->get_buffer();
         for (unsigned int i = 0; i < sz->as_uint(); i++) {
-            std::cout << keys[i] << " | " << values[i] << ' ' << values[i] / C << ' ' << values[i] % C << '\n';
+            std::cout << keys[i] << " | " << values[i] << '\n';
         }
     }
 
@@ -91,11 +88,8 @@ namespace algos {
         return std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     }
 
-//    const float EPS = 1e-8;
-
     void PrimSpla::log(const std::string &t) {
-        bool enabled = true;
-        if (enabled) {
+        if (enabled_log) {
             auto k = std::chrono::duration_cast<std::chrono::microseconds>(clock::now() - last_time).count();
             if (k > 10) {
                 std::cout << "! " << t << ": " << k << '\n';
@@ -105,27 +99,18 @@ namespace algos {
     }
 
     void PrimSpla::compute_() {
-        log("");
+//        log("start algo");
 
-//        visited = spla::Vector::make(n, spla::UINT);
-//        zero_vec = spla::Vector::make(n, spla::UINT);
         mst = spla::Vector::make(n, spla::UINT);
-//        one_vec = spla::Vector::make(n, spla::UINT);
 
         auto d = spla::Vector::make(n, spla::UINT);
         auto changed = spla::Vector::make(n, spla::UINT);
-//        auto d_modified = spla::Vector::make(n, spla::UINT);
         auto v_row = spla::Vector::make(n, spla::UINT);
         auto min_v = spla::Scalar::make_uint(INF);
 
-//        visited->set_fill_value(inf_uint);
-//        visited->fill_with(zero_uint);
-//        zero_vec->set_fill_value(zero_uint);
-//        one_vec->set_fill_value(spla::Scalar::make_uint(1));
         changed->set_fill_value(zero_uint);
         mst->set_fill_value(inf_uint);
         d->set_fill_value(inf_uint);
-//        d_modified->set_fill_value(inf_uint);
         v_row->set_fill_value(inf_uint);
 
         weight = 0;
@@ -137,8 +122,10 @@ namespace algos {
         std::set<std::pair<unsigned int, unsigned int>> s;
         std::vector<bool> visited(n, false);
 
+        last_time = clock::now();
+
         for (int i = 0; i < n; i++) {
-            log("start component prepare");
+//            log("start component prepare");
             if (!visited[i]) {
                 unsigned int v = i;
                 d->set_uint(v, 0);
@@ -149,29 +136,38 @@ namespace algos {
                                            spla::NQZERO_UINT);
 
                 update(s, changed);
-                log("prepare");
+//                log("prepare");
                 while (!s.empty()) {
-                    if (++counter % 10000 == 0) {
-                        log("10000 iterations");
+                    auto k = std::chrono::duration_cast<std::chrono::seconds>(clock::now() - last_time).count();
+                    if (k > 600) {
+                        std::cout << "TOO LONG\n";
+                        return;
                     }
+                    last_time = clock::now();
+//                    if (++counter % 10000 == 0) {
+//                        log("10000 iterations");
+//                    }
                     unsigned int w = s.begin()->first;
                     v = s.begin()->second;
                     s.erase(s.begin());
+//                    log("extract");
                     if (visited[v]) continue;
 
                     weight += w;
-                    log("extract");
                     d->set_uint(v, 0);
+//                    log("set_visited");
                     visited[v] = true;
-                    log("set_visited");
+//                    log("set_in_vector");
                     spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_UINT);
-                    log("exec_m_extract_row");
+//                    log("exec_m_extract_row");
                     spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_UINT);
-                    log("exec_v_eadd");
-                    spla::exec_v_assign_masked(mst, changed, spla::Scalar::make_uint(v), spla::SECOND_UINT,
+//                    log("exec_v_eadd");
+                    spla::exec_v_assign_masked(mst, changed, spla::Scalar::make_uint(v),
+                                               spla::SECOND_UINT,
                                                spla::NQZERO_UINT);
 
                     update(s, changed);
+//                    log("update");
                 }
             }
         }
