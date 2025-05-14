@@ -1,5 +1,9 @@
 add_executable(mst_benchmark main.cpp)
 
+target_include_directories(mst_benchmark PRIVATE
+        ${CMAKE_SOURCE_DIR}/src/lib
+)
+
 target_link_libraries(mst_benchmark
         algos_lib
 )

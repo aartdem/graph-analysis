@@ -39,7 +39,18 @@ if(NOT cmake_modules_POPULATED)
   FetchContent_MakeAvailable(cmake_modules)
 endif()
 
-#list(APPEND CMAKE_MODULE_PATH "${cmake_modules_SOURCE_DIR}")
+set(GRAPHBLAS_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/GraphBLAS")
+set(GRAPHBLAS_INCLUDE_DIR "${GRAPHBLAS_SRC_DIR}/Include")
+
+add_library(graphblas INTERFACE)
+target_include_directories(graphblas INTERFACE ${GRAPHBLAS_INCLUDE_DIR})
+
+set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph")
+set(LAGRAPH_INCLUDE_DIR "${LAGRAPH_SRC_DIR}/include")
+
+add_library(lagraph INTERFACE)
+target_include_directories(lagraph INTERFACE ${LAGRAPH_INCLUDE_DIR})
+target_link_libraries(lagraph INTERFACE graphblas)
 
 if(USE_CUDA)
   FetchContent_Declare(

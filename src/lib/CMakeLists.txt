@@ -24,10 +24,14 @@ set(SPLA_BUILD_EXAMPLES OFF CACHE BOOL "Disable building of Spla examples" FORCE
 set(SPLA_BUILD_OPENCL ON CACHE BOOL "Build library with opencl backend" FORCE)
 
 add_subdirectory(${SPLA_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/spla EXCLUDE_FROM_ALL)
-
 target_link_libraries(algos_lib PUBLIC spla)
 
+target_link_libraries(algos_lib PUBLIC lagraph graphblas)
+
 target_include_directories(algos_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(algos_lib PUBLIC 
+  ${CMAKE_SOURCE_DIR}/deps/LAGraph/include
+  ${CMAKE_SOURCE_DIR}/deps/GraphBLAS/Include)
 
 if(USE_CUDA)
   target_include_directories(algos_lib PUBLIC
