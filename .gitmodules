@@ -2,10 +2,6 @@
 	path = deps/spla
 	url = https://github.com/SparseLinearAlgebra/spla.git
 	branch = main
-[submodule "deps/gunrock"]
-	path = deps/gunrock
-	url = https://github.com/gunrock/gunrock.git
-	branch = main
 [submodule "deps/LAGraph"]
 	path = deps/LAGraph
 	url = https://github.com/GraphBLAS/LAGraph.git
@@ -14,3 +10,6 @@
 	path = deps/GraphBLAS
 	url = https://github.com/DrTimothyAldenDavis/GraphBLAS.git
 	branch = main
+[submodule "deps/gunrock"]
+	path = deps/gunrock
+	url = https://github.com/gunrock/gunrock.git
