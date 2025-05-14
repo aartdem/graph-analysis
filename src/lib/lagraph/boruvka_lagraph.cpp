@@ -8,6 +8,7 @@
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
+#include <functional>
 
 namespace algos {
 
@@ -74,12 +75,13 @@ namespace algos {
     }
 
     std::vector<int> extract_parent(GrB_Matrix T, int n) {
-        std::vector<int> parent(n, -1);
+        std::vector parent(n, -1);
 
         GrB_Index nvals;
         GrB_Matrix_nvals(&nvals, T);
 
-        std::vector<GrB_Index> I(nvals), J(nvals);
+        std::vector<GrB_Index> I(nvals);
+        std::vector<GrB_Index> J(nvals);
         std::vector<uint64_t> X(nvals);
         GrB_Matrix_extractTuples_UINT64(I.data(), J.data(), X.data(), &nvals, T);
 
@@ -90,19 +92,21 @@ namespace algos {
             adj[j].push_back(i);
         }
 
-        std::vector<bool> visited(n, false);
+        std::vector visited(n, false);
+
+        auto dfs_function = [&visited, &parent, &adj](auto&& self, int v, int p) -> void {
+            visited[v] = true;
+            parent[v] = p;
+            for (int u : adj[v]) {
+                if (!visited[u]) {
+                    self(self, u, v);
+                }
+            }
+        };
+
         for (int i = 0; i < n; i++) {
             if (!visited[i]) {
-                std::function<void(int, int)> dfs = [&](int v, int p) {
-                    visited[v] = true;
-                    parent[v] = p;
-                    for (int u : adj[v]) {
-                        if (!visited[u]) {
-                            dfs(u, v);
-                        }
-                    }
-                };
-                dfs(i, -1);
+                dfs_function(dfs_function, i, -1);
             }
         }
 
