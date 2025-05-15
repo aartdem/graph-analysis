@@ -6,7 +6,7 @@ Educational project for graph algorithms analysis with GPU acceleration.
 
 ## Overview
 
-This educational project provides a platform for analyzing various graph algorithms using different implementations. It integrates several high-performance graph processing libraries including GraphBLAS, LAGraph, Gunrock, and SPLA to enable comparative analysis of graph algorithm performance.
+This educational project provides a platform for analyzing various graph algorithms using different implementations. It integrates several high-performance graph processing libraries including SPLA, Gunrock, and LAGraph to enable comparative analysis of graph algorithm performance.
 
 ## Requirements
 
@@ -100,12 +100,12 @@ The experiment compares the performance of two Minimum Spanning Tree (MST) algor
 The experiment compares different implementations of the following MST algorithms:
 
 1. **Prim's Algorithm**:
-   - PrimSpla - Implementation using SPLA
-   - PrimGunrock - Implementation using Gunrock
+   - PrimSpla - Implementation using SPLA (Demchenko)
+   - PrimGunrock - Implementation using Gunrock (Lanovaya)
 
 2. **Borůvka's Algorithm**:
-   - BoruvkaSpla - Implementation using SPLA
-   - BoruvkaGunrock - Implementation using Gunrock
+   - BoruvkaSpla - Implementation using SPLA (Rzhankov)
+   - BoruvkaGunrock - Implementation using Gunrock (Lanovaya)
 
 ### Presentations
 
