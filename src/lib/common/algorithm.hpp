@@ -12,4 +12,4 @@ namespace algos {
 
         virtual std::chrono::milliseconds compute() = 0;
     };
-};
+};// namespace algos

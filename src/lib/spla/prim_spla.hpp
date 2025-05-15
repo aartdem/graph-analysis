@@ -1,9 +1,9 @@
 #pragma once
 
-#include <spla.hpp>
 #include "common/mst_algorithm.hpp"
 #include <chrono>
 #include <set>
+#include <spla.hpp>
 
 namespace algos {
     class PrimSpla : public MstAlgorithm {
@@ -20,9 +20,9 @@ namespace algos {
 
         void print_vector(const spla::ref_ptr<spla::Vector> &v, const std::string &name = "");
 
-        void update(std::set<std::pair<unsigned int , unsigned int>> &s, const spla::ref_ptr<spla::Vector> &v) ;
+        void update(std::set<std::pair<unsigned int, unsigned int>> &s, const spla::ref_ptr<spla::Vector> &v);
 
-        void log(const std::string& t);
+        void log(const std::string &t);
 
         using clock = std::chrono::steady_clock;
 
@@ -39,4 +39,4 @@ namespace algos {
         spla::ref_ptr<spla::Scalar> zero_uint = spla::Scalar::make_uint(0);
         std::chrono::steady_clock::time_point last_time = clock::now();
     };
-}
+}// namespace algos

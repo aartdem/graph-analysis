@@ -9,4 +9,4 @@ namespace algos {
 
         Tree(int n, std::vector<int> parent, uint64_t w) : n(n), parent(std::move(parent)), weight(w) {}
     };
-}
+}// namespace algos
