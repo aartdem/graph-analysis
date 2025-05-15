@@ -1,12 +1,12 @@
 # Graph Analysis
 
-Library for graph algorithms analysis with GPU acceleration.
+Educational project for graph algorithms analysis with GPU acceleration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Overview
 
-This project provides a platform for analyzing various graph algorithms using different implementations. It integrates several high-performance graph processing libraries including SPLA, Gunrock and LAGraph to enable comparative analysis of graph algorithm performance.
+This educational project provides a platform for analyzing various graph algorithms using different implementations. It integrates several high-performance graph processing libraries including GraphBLAS, LAGraph, Gunrock, and SPLA to enable comparative analysis of graph algorithm performance.
 
 ## Requirements
 
@@ -81,7 +81,7 @@ graph-analysis/
 
 ## Experiment
 
-The experiment compares the performance of various Minimum Spanning Tree (MST) algorithms across different graph datasets.
+The experiment compares the performance of two Minimum Spanning Tree (MST) algorithms (Prim's and Borůvka's) implemented using different libraries across various graph datasets.
 
 ### Experiment Setup
 
@@ -95,12 +95,23 @@ The experiment compares the performance of various Minimum Spanning Tree (MST) a
   - **Cache**: L1 – 640KB, L2 – 10MB, L3 – 24MB
   - **RAM**: 16 GB
 
-### Algorithms Compared
+### Algorithms and Implementations
 
-1. PrimSpla - Prim's algorithm implementation using SPLA
-2. BoruvkaSpla - Borůvka's algorithm implementation using SPLA
-3. BoruvkaGunrock - Borůvka's algorithm implementation using Gunrock
-4. PrimGunrock - Prim's algorithm implementation using Gunrock
+The experiment compares different implementations of the following MST algorithms:
+
+1. **Prim's Algorithm**:
+   - PrimSpla - Implementation using SPLA
+   - PrimGunrock - Implementation using Gunrock
+
+2. **Borůvka's Algorithm**:
+   - BoruvkaSpla - Implementation using SPLA
+   - BoruvkaGunrock - Implementation using Gunrock
+
+### Presentations
+
+For more detailed information about the experiment:
+- [Experiment Description](https://docs.google.com/presentation/d/1xxoiBwerK7msai74zNqYxyBL4wHLj3AvmLC116NprvM/edit)
+- [Experiment Results](https://docs.google.com/presentation/d/1tovuGspjaOwE9g6Lq4YJFvxqwHRNL1XCQpDL_DQ84Yw/edit)
 
 ### Running the Experiment
 
