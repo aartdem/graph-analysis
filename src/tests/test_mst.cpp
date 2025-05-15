@@ -7,7 +7,7 @@
 namespace tests {
     struct GraphCase {
         std::string filename;
-        double expected_weight;
+        uint64_t expected_weight;
     };
 
     bool has_cycle(int v, int p, const std::vector<std::vector<int>> &g, std::vector<bool> &visited) {
@@ -90,7 +90,7 @@ namespace tests {
             this->algo->load_graph(file);
             this->algo->compute();
             auto res = this->algo->get_result();
-            ASSERT_FLOAT_EQ(test_case.expected_weight, res.weight);
+            ASSERT_EQ(test_case.expected_weight, res.weight);
             ASSERT_TRUE(is_tree_or_forest(res.parent));
         }
     }
