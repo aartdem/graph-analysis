@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 namespace algos {
     struct Tree {
         int n;

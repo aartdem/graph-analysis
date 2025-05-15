@@ -1,6 +1,5 @@
 #include "prim_spla.hpp"
 #include "common/tree.hpp"
-#include <cmath>
 #include <fstream>
 #include <set>
 #include <spla.hpp>
@@ -41,7 +40,7 @@ namespace algos {
             if (u < 0 || v < 0 || u > n || v > n) {
                 throw std::runtime_error("Invalid graph, incorrect vertex numbers");
             }
-            if (w <= 0) {
+            if (w < 0) {
                 throw std::runtime_error("Invalid graph, negative edges");
             }
             if (u != v) {
@@ -99,7 +98,7 @@ namespace algos {
     }
 
     void PrimSpla::compute_() {
-        //        log("start algo");
+        log("start algo");
 
         mst = spla::Vector::make(n, spla::UINT);
 
@@ -125,7 +124,7 @@ namespace algos {
         last_time = clock::now();
 
         for (int i = 0; i < n; i++) {
-            //            log("start component prepare");
+            log("start component prepare");
             if (!visited[i]) {
                 unsigned int v = i;
                 d->set_uint(v, 0);
@@ -136,38 +135,30 @@ namespace algos {
                                            spla::NQZERO_UINT);
 
                 update(s, changed);
-                //                log("prepare");
+                log("prepare");
                 while (!s.empty()) {
-                    auto k = std::chrono::duration_cast<std::chrono::seconds>(clock::now() - last_time).count();
-                    if (k > 600) {
-                        std::cout << "TOO LONG\n";
-                        return;
-                    }
                     last_time = clock::now();
-                    //                    if (++counter % 10000 == 0) {
-                    //                        log("10000 iterations");
-                    //                    }
                     unsigned int w = s.begin()->first;
                     v = s.begin()->second;
                     s.erase(s.begin());
-                    //                    log("extract");
+                    log("extract");
                     if (visited[v]) continue;
 
                     weight += w;
                     d->set_uint(v, 0);
-                    //                    log("set_visited");
+                    log("set_visited");
                     visited[v] = true;
-                    //                    log("set_in_vector");
+                    log("set_in_vector");
                     spla::exec_m_extract_row(v_row, a, v, spla::IDENTITY_UINT);
-                    //                    log("exec_m_extract_row");
+                    log("exec_m_extract_row");
                     spla::exec_v_eadd_fdb(d, v_row, changed, spla::MIN_UINT);
-                    //                    log("exec_v_eadd");
+                    log("exec_v_eadd");
                     spla::exec_v_assign_masked(mst, changed, spla::Scalar::make_uint(v),
                                                spla::SECOND_UINT,
                                                spla::NQZERO_UINT);
 
                     update(s, changed);
-                    //                    log("update");
+                    log("update");
                 }
             }
         }
