@@ -6,6 +6,8 @@ Educational project for graph algorithms analysis with GPU acceleration.
 
 ### Algorithms and Implementations
 
+Slides are located in the "slides" directory.
+
 The experiment compares different implementations of the following MST algorithms:
 
 1. **Prim's Algorithm**:

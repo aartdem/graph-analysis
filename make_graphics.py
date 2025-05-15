@@ -70,7 +70,7 @@ def main():
 
     # Define comparisons
     comparisons = [
-        (['BoruvkaSpla', 'BoruvkaGunrock'], 'Boruvka: Gunrock GPU vs Spla GPU', 'comparison_boruvka.png'),
+        (['BoruvkaSpla', 'BoruvkaGunrock'], 'Boruvka: Spla GPU vs Gunrock GPU', 'comparison_boruvka.png'),
         (['PrimSpla', 'PrimGunrock'], 'Prim: Spla CPU vs Gunrock GPU', 'comparison_prim.png')
     ]
 
