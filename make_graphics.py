@@ -1,31 +1,37 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy import stats
 
 
-def plot_comparison(df, algos, title, output_filename, color_map, ylim=None):
+def plot_comparison(df, algos, title, output_filename, color_map, ylim=None, ci_level=0.95):
     graphs = sorted(df['Graph'].unique())
+    alpha = 1 - ci_level
 
     # Prepare data
     means = []
-    sems = []
+    cis = []
     for algo in algos:
         sub = df[df['Algorithm'] == algo]
         grp = sub.groupby('Graph')['time']
         mean = grp.mean().reindex(graphs)
-        sem = grp.std(ddof=1).reindex(graphs) / np.sqrt(grp.count().reindex(graphs))
+        std = grp.std(ddof=1).reindex(graphs)
+        n = grp.count().reindex(graphs)
+        sem = std / np.sqrt(n)
+        t_crit = stats.t.ppf(1 - alpha / 2, df=n - 1)
+        ci = sem * t_crit
         means.append(mean.values)
-        sems.append(sem.values)
+        cis.append(ci.values)
 
     # Plot
     x = np.arange(len(graphs))
     width = 0.35
     fig, ax = plt.subplots()
     error_kwargs = dict(elinewidth=1.5, capsize=5)
-    # Plot each algorithm with specified color
-    ax.bar(x - width/2, means[0], width, yerr=sems[0], error_kw=error_kwargs,
+
+    ax.bar(x - width / 2, means[0], width, yerr=cis[0], error_kw=error_kwargs,
            label=algos[0], color=color_map.get(algos[0]))
-    ax.bar(x + width/2, means[1], width, yerr=sems[1], error_kw=error_kwargs,
+    ax.bar(x + width / 2, means[1], width, yerr=cis[1], error_kw=error_kwargs,
            label=algos[1], color=color_map.get(algos[1]))
 
     ax.set_ylabel('Time (seconds)')
@@ -64,11 +70,11 @@ def main():
 
     # Define comparisons
     comparisons = [
-        (['BoruvkaSpla', 'BoruvkaGunrock',], 'Boruvka: Gunrock vs Spla', 'comparison_boruvka.png'),
+        (['BoruvkaSpla', 'BoruvkaGunrock'], 'Boruvka: Gunrock vs Spla', 'comparison_boruvka.png'),
         (['PrimSpla', 'PrimGunrock'], 'Prim: Spla vs Gunrock', 'comparison_prim.png')
     ]
 
-    # Compute common y-limits across all comparisons in seconds
+    # Compute common y-limits across all comparisons
     all_max = 0.0
     all_min = np.inf
     for algos, _, _ in comparisons:
@@ -76,13 +82,16 @@ def main():
             sub = df[df['Algorithm'] == algo]
             grp = sub.groupby('Graph')['time']
             mean = grp.mean()
-            sem = grp.std(ddof=1) / np.sqrt(grp.count())
-            upper = (mean + sem).max()
+            std = grp.std(ddof=1)
+            n = grp.count()
+            sem = std / np.sqrt(n)
+            # approximate CI max using z-value
+            upper = (mean + sem * stats.norm.ppf(0.975)).max()
             all_max = max(all_max, upper)
     all_min = df['time'].min()
     ylim = (max(all_min * 0.9, 1e-6), all_max * 1.1)
 
-    # Generate plots
+    # Generate plots with 95% CI
     for algos, title, filename in comparisons:
         plot_comparison(
             df,
@@ -90,10 +99,10 @@ def main():
             title=title,
             output_filename=filename,
             color_map=color_map,
-            ylim=ylim
+            ylim=ylim,
+            ci_level=0.95
         )
 
 
 if __name__ == '__main__':
     main()
-
