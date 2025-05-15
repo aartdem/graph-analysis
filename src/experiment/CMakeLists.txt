@@ -22,5 +22,3 @@ if(USE_CUDA)
             CUDA_ENABLED
     )
 endif()
-
-file(MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/benchmark_results)

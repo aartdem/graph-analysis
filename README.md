@@ -55,13 +55,6 @@ cd build
 ctest
 ```
 
-Or run tests directly:
-
-```bash
-cd build
-./src/tests/graph_analysis_tests
-```
-
 ## Project Structure
 
 ```
@@ -117,7 +110,7 @@ For more detailed information about the experiment:
 
 ```bash
 cd build
-./src/experiment/mst_benchmark
+./mst_benchmark
 ```
 
 ### Analyzing Results
@@ -125,7 +118,8 @@ cd build
 The experiment generates CSV files with detailed performance measurements. Use the provided Python script to visualize the results:
 
 ```bash
-python src/experiment/benchmark_visualize.py benchmark_results/detailed_results_*.csv benchmark_results/summary_results_*.csv
+mv build/benchmark_results.csv .
+python make_graphics.py
 ```
 
 ## License
