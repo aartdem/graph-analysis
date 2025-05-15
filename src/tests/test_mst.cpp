@@ -81,7 +81,7 @@ namespace tests {
             {"test1.mtx", 22},
             {"small.mtx", 120},
             {"Trefethen_2000.mtx", 1999},
-            {"two_components_float.mtx", 15}};
+            {"two_components_int.mtx", 15}};
 
     TYPED_TEST(MstAlgorithmTest, IsCorrectMst) {
         for (const GraphCase &test_case: mst_test_cases) {
