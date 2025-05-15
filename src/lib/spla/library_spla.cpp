@@ -1,6 +1,6 @@
-#include <iostream>
-#include "spla/library.hpp"
 #include "library_spla.hpp"
+#include "spla/library.hpp"
+#include <iostream>
 
 namespace algos {
     spla::Library *library;
@@ -16,4 +16,4 @@ namespace algos {
         library->finalize();
         library = nullptr;
     }
-}
+}// namespace algos

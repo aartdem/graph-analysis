@@ -8,4 +8,4 @@ namespace algos {
     public:
         virtual Tree get_result() = 0;
     };
-};
+};// namespace algos

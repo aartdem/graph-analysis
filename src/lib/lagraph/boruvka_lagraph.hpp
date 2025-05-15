@@ -17,4 +17,4 @@ namespace algos {
         std::unique_ptr<Tree> tree = nullptr;
         uint64_t weight = 0;
     };
-}
+}// namespace algos

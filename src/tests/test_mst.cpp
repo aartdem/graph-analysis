@@ -1,8 +1,8 @@
-#include <gtest/gtest.h>
-#include <filesystem>
 #include "common/mst_algorithm.hpp"
 #include "spla/boruvka_spla.hpp"
 #include "spla/prim_spla.hpp"
+#include <filesystem>
+#include <gtest/gtest.h>
 
 namespace tests {
     struct GraphCase {
@@ -49,7 +49,7 @@ namespace tests {
     }
 
     template<class T>
-    algos::MstAlgorithm *create_mst_algo(); // implement parametrized function for each MST algorithm
+    algos::MstAlgorithm *create_mst_algo();// implement parametrized function for each MST algorithm
 
     template<>
     algos::MstAlgorithm *create_mst_algo<algos::PrimSpla>() {
@@ -72,17 +72,16 @@ namespace tests {
         algos::MstAlgorithm *const algo;
     };
 
-    using AlgosTypes = ::testing::Types<algos::PrimSpla, algos::BoruvkaSpla>; // extend this with other MST algorimths
+    using AlgosTypes = ::testing::Types<algos::PrimSpla, algos::BoruvkaSpla>;// extend this with other MST algorimths
     TYPED_TEST_SUITE(MstAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {
-            {"point.mtx",          0},
-            {"one_edge.mtx",       2},
-            {"test1.mtx",          22},
-            {"small.mtx",          120},
+            {"point.mtx", 0},
+            {"one_edge.mtx", 2},
+            {"test1.mtx", 22},
+            {"small.mtx", 120},
             {"Trefethen_2000.mtx", 1999},
-            {"two_components_float.mtx", 15}
-    };
+            {"two_components_int.mtx", 15}};
 
     TYPED_TEST(MstAlgorithmTest, IsCorrectMst) {
         for (const GraphCase &test_case: mst_test_cases) {
@@ -95,4 +94,4 @@ namespace tests {
             ASSERT_TRUE(is_tree_or_forest(res.parent));
         }
     }
-}
+}// namespace tests
