@@ -70,8 +70,8 @@ def main():
 
     # Define comparisons
     comparisons = [
-        (['BoruvkaSpla', 'BoruvkaGunrock'], 'Boruvka: Gunrock vs Spla', 'comparison_boruvka.png'),
-        (['PrimSpla', 'PrimGunrock'], 'Prim: Spla vs Gunrock', 'comparison_prim.png')
+        (['BoruvkaSpla', 'BoruvkaGunrock'], 'Boruvka: Gunrock GPU vs Spla GPU', 'comparison_boruvka.png'),
+        (['PrimSpla', 'PrimGunrock'], 'Prim: Spla CPU vs Gunrock GPU', 'comparison_prim.png')
     ]
 
     # Compute common y-limits across all comparisons
