@@ -4,6 +4,21 @@ Educational project for graph algorithms analysis with GPU acceleration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+### Algorithms and Implementations
+
+Slides are located in the "slides" directory.
+
+The experiment compares different implementations of the following MST algorithms:
+
+1. **Prim's Algorithm**:
+    - PrimSpla - Implementation using SPLA (author: Demchenko)
+    - PrimGunrock - Implementation using Gunrock (author: Lanovaya)
+
+2. **Borůvka's Algorithm**:
+    - BoruvkaSpla - Implementation using SPLA (author: Rzhankov)
+    - BoruvkaGunrock - Implementation using Gunrock (author: Lanovaya)
+
+
 ## Overview
 
 This educational project provides a platform for analyzing various graph algorithms using different implementations. It integrates several high-performance graph processing libraries including SPLA, Gunrock, and LAGraph to enable comparative analysis of graph algorithm performance.
@@ -87,24 +102,6 @@ The experiment compares the performance of two Minimum Spanning Tree (MST) algor
   - **CPU**: 11th Gen Intel Core i7-11800H @ 2.30GHz
   - **Cache**: L1 – 640KB, L2 – 10MB, L3 – 24MB
   - **RAM**: 16 GB
-
-### Algorithms and Implementations
-
-The experiment compares different implementations of the following MST algorithms:
-
-1. **Prim's Algorithm**:
-   - PrimSpla - Implementation using SPLA (Demchenko)
-   - PrimGunrock - Implementation using Gunrock (Lanovaya)
-
-2. **Borůvka's Algorithm**:
-   - BoruvkaSpla - Implementation using SPLA (Rzhankov)
-   - BoruvkaGunrock - Implementation using Gunrock (Lanovaya)
-
-### Presentations
-
-For more detailed information about the experiment:
-- [Experiment Description](https://docs.google.com/presentation/d/1xxoiBwerK7msai74zNqYxyBL4wHLj3AvmLC116NprvM/edit)
-- [Experiment Results](https://docs.google.com/presentation/d/1tovuGspjaOwE9g6Lq4YJFvxqwHRNL1XCQpDL_DQ84Yw/edit)
 
 ### Running the Experiment
 
