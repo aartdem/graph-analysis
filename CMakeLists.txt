@@ -6,7 +6,6 @@ if(USE_CUDA)
   find_package(CUDAToolkit QUIET)
   if(CUDAToolkit_FOUND)
     set(CMAKE_CUDA_ARCHITECTURES 86 CACHE STRING "RTX 50-series")
-    add_compile_definitions(HAVE_CUDA)
     add_compile_definitions(CUDA_ENABLED)
     message(STATUS "CUDA найден. Поддержка алгоритмов Gunrock включена.")
     set(LANGUAGES_LIST CXX CUDA C)
@@ -31,7 +30,7 @@ enable_testing()
 include(FetchContent)
 FetchContent_Declare(
   cmake_modules
-  GIT_REPOSITORY https://github.com/rpavlik/cmake-modules.git 
+  GIT_REPOSITORY https://github.com/rpavlik/cmake-modules.git
   GIT_TAG        main
 )
 FetchContent_GetProperties(cmake_modules)
@@ -57,13 +56,13 @@ list(APPEND CMAKE_MODULE_PATH "${cmake_modules_SOURCE_DIR}")
   FetchContent_Declare(
     gunrock
     GIT_REPOSITORY https://github.com/gunrock/gunrock.git
-    GIT_TAG        main          
+    GIT_TAG        main
   )
   set(ESSENTIALS_BUILD_EXAMPLES  OFF CACHE BOOL "" FORCE)
   set(ESSENTIALS_BUILD_TESTS     OFF CACHE BOOL "" FORCE)
   set(ESSENTIALS_BUILD_BENCHMARKS OFF CACHE BOOL "" FORCE)
   set(GUNROCK_DOWNLOAD_DEPENDENCIES ON CACHE BOOL "")
-  
+
   add_subdirectory(deps/gunrock EXCLUDE_FROM_ALL)
 endif()
 

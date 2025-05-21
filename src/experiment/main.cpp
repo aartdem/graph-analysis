@@ -1,21 +1,21 @@
-#include <algorithm>
-#include <chrono>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "spla/boruvka_spla.hpp"
+#include "spla/library_spla.hpp"
 #include "spla/prim_spla.hpp"
 
-#if defined(HAVE_CUDA) || defined(CUDA_ENABLED)
+#if defined(CUDA_ENABLED)
 #define USE_GUNROCK 1
+
 #include "gunrock/boruvka.hxx"
 #include "gunrock/prim.hxx"
+
 #else
 #define USE_GUNROCK 0
 #endif
@@ -58,7 +58,7 @@ BenchmarkResult run_benchmark(const string &algo_name, const string &graph_path,
         double seconds = time.count();
         result.execution_times.push_back(seconds);
 
-        cout << " " << fixed << setprecision(2) << seconds << " s" << endl;
+        cout << " " << fixed << setprecision(2) << seconds << " ms" << endl;
     }
 
     return result;
@@ -73,7 +73,7 @@ void save_results_to_csv(const vector<BenchmarkResult> &results,
     }
 
     file << "Algorithm,Graph,Run";
-    for (int i = 1; i <= results[0].execution_times.size(); ++i) {
+    for (size_t i = 1; i <= results[0].execution_times.size(); ++i) {
         file << "," << i;
     }
     file << endl;
@@ -94,41 +94,43 @@ int main() {
     cout << "MST Algorithms Benchmark" << endl;
 
 #if USE_GUNROCK
-    cout << "CUDA поддержка: ВКЛЮЧЕНА (доступны алгоритмы Gunrock)" << endl;
+    cout << "CUDA support: ENABLED (Gunrock algorithms available)" << endl;
 #else
-    cout << "CUDA поддержка: ОТКЛЮЧЕНА (алгоритмы Gunrock недоступны)" << endl;
+    cout << "CUDA support: DISABLED (Gunrock algorithms unavailable)" << endl;
 #endif
+
+    print_spla_accelerator_info();
 
     // List of algorithms to benchmark
     vector<pair<string, function<BenchmarkResult(const string &, int)>>>
-            algorithms = {{"PrimSpla", [](const string &graph_path, int num_runs) {
-                               return run_benchmark<PrimSpla>("PrimSpla", graph_path,
-                                                              num_runs);
-                           }}};
-    algorithms.emplace_back("BoruvkaSpla", [](const string &graph_path, int num_runs) {
-        return run_benchmark<BoruvkaSpla>("BoruvkaSpla", graph_path, num_runs);
-    });
+            algorithms = {
+                    {"PrimSpla", [](const string &graph_path, int num_runs) {
+                         return run_benchmark<PrimSpla>("PrimSpla", graph_path,
+                                                        num_runs);
+                     }}};
+    //    algorithms.emplace_back("BoruvkaSpla", [](const string &graph_path, int num_runs) {
+    //        return run_benchmark<BoruvkaSpla>("BoruvkaSpla", graph_path, num_runs);
+    //    });
 
 #if USE_GUNROCK
-    algorithms.push_back(
-            {"BoruvkaGunrock", [](const string &graph_path, int num_runs) {
-                 return run_benchmark<BoruvkaGunrock>("BoruvkaGunrock", graph_path,
-                                                      num_runs);
-             }});
+    algorithms.emplace_back("BoruvkaGunrock", [](const string &graph_path, int num_runs) {
+        return run_benchmark<BoruvkaGunrock>("BoruvkaGunrock", graph_path,
+                                             num_runs);
+    });
 
-    algorithms.push_back(
-            {"PrimGunrock", [](const string &graph_path, int num_runs) {
-                 return run_benchmark<PrimGunrock>("PrimGunrock", graph_path, num_runs);
-             }});
+    algorithms.emplace_back("PrimGunrock", [](const string &graph_path, int num_runs) {
+        return run_benchmark<PrimGunrock>("PrimGunrock", graph_path, num_runs);
+    });
 #endif
 
     // Find all .mtx files in the data directory
     vector<string> graph_files;
-    for (const auto &entry: filesystem::directory_iterator(DATA_DIR)) {
-        if (entry.path().extension() == ".mtx") {
-            graph_files.push_back(entry.path().string());
-        }
-    }
+    //    for (const auto &entry: filesystem::directory_iterator(DATA_DIR)) {
+    //        if (entry.path().extension() == ".mtx") {
+    //            graph_files.push_back(entry.path().string());
+    //        }
+    //    }
+    graph_files = {"/home/aartdem/graphs/graph-analysis/data/ca_coauth_weighted_reduced.mtx"};
 
     if (graph_files.empty()) {
         cout << "No .mtx files found in the data directory." << endl;
@@ -143,7 +145,7 @@ int main() {
         cout << "  - " << filesystem::path(file).filename().string() << endl;
     }
 
-    const int NUM_RUNS = 20;
+    const int NUM_RUNS = 1;
 
     vector<BenchmarkResult> all_results;
     for (const auto &graph_file: graph_files) {

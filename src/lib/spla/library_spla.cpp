@@ -5,15 +5,10 @@
 namespace algos {
     spla::Library *library;
 
-    void initialize_spla() {
+    void print_spla_accelerator_info() {
         library = spla::Library::get();
         std::string acc_info;
         library->get_accelerator_info(acc_info);
         std::cout << "# Accelerator: " << acc_info << std::endl;
-    }
-
-    void finalize_spla() {
-        library->finalize();
-        library = nullptr;
     }
 }// namespace algos
