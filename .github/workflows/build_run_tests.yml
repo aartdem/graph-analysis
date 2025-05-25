@@ -17,7 +17,7 @@ jobs:
         run: |
           cd deps/GraphBLAS
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel
+          cmake --build build -j4
           sudo cmake --install build
 
       - name: Configure CMake
