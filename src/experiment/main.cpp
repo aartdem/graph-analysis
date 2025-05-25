@@ -4,19 +4,21 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
-#include <random>
 #include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "lagraph/boruvka_lagraph.hpp"
 #include "spla/boruvka_spla.hpp"
+#include "spla/library_spla.hpp"
 #include "spla/prim_spla.hpp"
 
-#if defined(HAVE_CUDA) || defined(CUDA_ENABLED)
+#if defined(CUDA_ENABLED)
 #define USE_GUNROCK 1
+
 #include "gunrock/boruvka.hxx"
 #include "gunrock/prim.hxx"
+
 #else
 #define USE_GUNROCK 0
 #endif
@@ -59,7 +61,7 @@ BenchmarkResult run_benchmark(const string &algo_name, const string &graph_path,
         double seconds = time.count();
         result.execution_times.push_back(seconds);
 
-        cout << " " << fixed << setprecision(2) << seconds << " s" << endl;
+        cout << " " << fixed << setprecision(2) << seconds << " ms" << endl;
     }
 
     return result;
@@ -73,7 +75,7 @@ void save_results_to_csv(const vector<BenchmarkResult> &results, const string &o
     }
 
     file << "Algorithm,Graph,Run";
-    for (int i = 1; i <= results[0].execution_times.size(); ++i) {
+    for (size_t i = 1; i <= results[0].execution_times.size(); ++i) {
         file << "," << i;
     }
     file << endl;
@@ -94,10 +96,12 @@ int main() {
     cout << "MST Algorithms Benchmark" << endl;
 
 #if USE_GUNROCK
-    cout << "CUDA поддержка: ВКЛЮЧЕНА (доступны алгоритмы Gunrock)" << endl;
+    cout << "CUDA support: ENABLED (Gunrock algorithms available)" << endl;
 #else
-    cout << "CUDA поддержка: ОТКЛЮЧЕНА (алгоритмы Gunrock недоступны)" << endl;
+    cout << "CUDA support: DISABLED (Gunrock algorithms unavailable)" << endl;
 #endif
+
+    print_spla_accelerator_info();
 
     // List of algorithms to benchmark
     vector<pair<string, function<BenchmarkResult(const string &, int)>>> algorithms = {
@@ -109,10 +113,17 @@ int main() {
     algorithms.push_back({"BoruvkaGunrock", [](const string &graph_path, int num_runs) {
                               return run_benchmark<BoruvkaGunrock>("BoruvkaGunrock", graph_path, num_runs);
                           }});
+    algorithms.emplace_back("BoruvkaGunrock", [](const string &graph_path, int num_runs) {
+        return run_benchmark<BoruvkaGunrock>("BoruvkaGunrock", graph_path,
+                                             num_runs);
+    });
 
     algorithms.push_back({"PrimGunrock", [](const string &graph_path, int num_runs) {
                               return run_benchmark<PrimGunrock>("PrimGunrock", graph_path, num_runs);
                           }});
+    algorithms.emplace_back("PrimGunrock", [](const string &graph_path, int num_runs) {
+        return run_benchmark<PrimGunrock>("PrimGunrock", graph_path, num_runs);
+    });
 #endif
 
     // Find all .mtx files in the data directory

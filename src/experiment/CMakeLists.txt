@@ -17,8 +17,5 @@ target_compile_definitions(mst_benchmark PRIVATE
 )
 
 if(USE_CUDA)
-    target_compile_definitions(mst_benchmark PRIVATE
-            HAVE_CUDA
-            CUDA_ENABLED
-    )
+    target_compile_definitions(mst_benchmark PRIVATE CUDA_ENABLED)
 endif()
