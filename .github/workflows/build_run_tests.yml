@@ -13,15 +13,8 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Configure and Build GraphBLAS
-        run: |
-          cd deps/GraphBLAS
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build -j4
-          sudo cmake --install build
-
       - name: Configure CMake
-        run: cmake -S . -B build
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build --parallel
