@@ -13,21 +13,6 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      # Build GraphBLAS dependency
-      - name: Configure and build GraphBLAS
-        run: |
-          cd deps/GraphBLAS
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-          cmake --build build --parallel
-
-      # Build LAGraph dependency (depends on GraphBLAS)
-      - name: Configure and build LAGraph
-        run: |
-          cd deps/LAGraph
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGRAPHBLAS_ROOT=$(pwd)/../GraphBLAS/build
-          cmake --build build --parallel
-
-      # Now configure and build the main project
       - name: Configure CMake
         run: cmake -S . -B build
 
