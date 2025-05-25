@@ -13,17 +13,17 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Build GraphBLAS separately
+      - name: Create GraphBLASTargets.cmake
         run: |
-          cd deps/GraphBLAS
-          mkdir build && cd build
-          cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/graphblas_install
-          make -j
-          make install
+          mkdir -p build/GraphBLAS
+          cat > build/GraphBLAS/GraphBLASTargets.cmake << 'EOL'
+          if(NOT TARGET SuiteSparse::GraphBLAS)
+            add_library(SuiteSparse::GraphBLAS ALIAS graphblas)
+          endif()
+          EOL
 
-      - name: Configure CMake with GraphBLAS path
-        run: |
-          cmake -S . -B build -DGraphBLAS_ROOT=$HOME/graphblas_install
+      - name: Configure CMake
+        run: cmake -S . -B build
 
       - name: Build
         run: cmake --build build --parallel
