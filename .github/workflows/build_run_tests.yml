@@ -13,15 +13,17 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Configure CMake
+      - name: Build GraphBLAS separately
         run: |
-          mkdir -p build
-          cmake -S . -B build -DCMAKE_INSTALL_PREFIX=`pwd`/build/install
+          cd deps/GraphBLAS
+          mkdir build && cd build
+          cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/graphblas_install
+          make -j
+          make install
 
-      - name: Build GraphBLAS
+      - name: Configure CMake with GraphBLAS path
         run: |
-          cmake --build build --target graphblas --parallel
-          cmake --install build/GraphBLAS --prefix=`pwd`/build/install
+          cmake -S . -B build -DGraphBLAS_ROOT=$HOME/graphblas_install
 
       - name: Build
         run: cmake --build build --parallel
