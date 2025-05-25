@@ -45,6 +45,15 @@ set(BUILD_GRB_STATIC_LIBRARY OFF CACHE BOOL "Build GraphBLAS as a shared library
 set(BUILD_TESTING OFF CACHE BOOL "Don't build GraphBLAS tests" FORCE)
 add_subdirectory(${GRAPHBLAS_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS EXCLUDE_FROM_ALL)
 
+if(TARGET GraphBLAS)
+  add_library(SuiteSparse::GraphBLAS ALIAS GraphBLAS)
+endif()
+if(TARGET GraphBLAS_static)
+  add_library(SuiteSparse::GraphBLAS_static ALIAS GraphBLAS_static)
+endif()
+
+set(SUITESPARSE_ROOT_CMAKELISTS ON)
+
 # Build LAGraph library
 set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph")
 set(LAGRAPH_INCLUDE_DIR "${LAGRAPH_SRC_DIR}/include")
