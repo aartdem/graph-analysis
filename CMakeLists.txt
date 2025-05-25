@@ -53,6 +53,11 @@ add_subdirectory(${GRAPHBLAS_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS)
 set(GraphBLAS_DIR "${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS" CACHE PATH "Path to GraphBLAS build directory" FORCE)
 set(GraphBLAS_INCLUDE_DIR "${GRAPHBLAS_SRC_DIR}/Include" CACHE PATH "Path to GraphBLAS include directory" FORCE)
 
+# Перед добавлением LAGraph
+set(GraphBLAS_ROOT "${CMAKE_CURRENT_BINARY_DIR}/install" CACHE PATH "GraphBLAS install dir" FORCE)
+set(GraphBLAS_DIR "${CMAKE_CURRENT_BINARY_DIR}/install/lib/cmake/GraphBLAS" CACHE PATH "Path to GraphBLASConfig.cmake" FORCE)
+set(ENV{GraphBLAS_ROOT} "${CMAKE_CURRENT_BINARY_DIR}/install")
+
 # Build LAGraph library
 set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph")
 set(LAGRAPH_INCLUDE_DIR "${LAGRAPH_SRC_DIR}/include")
