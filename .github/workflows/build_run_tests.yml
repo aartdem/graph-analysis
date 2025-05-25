@@ -14,7 +14,14 @@ jobs:
           fetch-depth: 1
 
       - name: Configure CMake
-        run: cmake -S . -B build
+        run: |
+          mkdir -p build
+          cmake -S . -B build -DCMAKE_INSTALL_PREFIX=`pwd`/build/install
+
+      - name: Build GraphBLAS
+        run: |
+          cmake --build build --target graphblas --parallel
+          cmake --install build/GraphBLAS --prefix=`pwd`/build/install
 
       - name: Build
         run: cmake --build build --parallel

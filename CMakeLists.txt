@@ -43,7 +43,15 @@ endif()
 set(GRAPHBLAS_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/GraphBLAS")
 set(BUILD_GRB_STATIC_LIBRARY OFF CACHE BOOL "Build GraphBLAS as a shared library" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Don't build GraphBLAS tests" FORCE)
+set(GRAPHBLAS_INSTALL ON CACHE BOOL "Enable installation of GraphBLAS" FORCE)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
+
+# Build GraphBLAS first
 add_subdirectory(${GRAPHBLAS_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS EXCLUDE_FROM_ALL)
+
+# Set GraphBLAS include and library paths
+set(GraphBLAS_DIR "${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS" CACHE PATH "Path to GraphBLAS build directory" FORCE)
+set(GraphBLAS_INCLUDE_DIR "${GRAPHBLAS_SRC_DIR}/Include" CACHE PATH "Path to GraphBLAS include directory" FORCE)
 
 # Build LAGraph library
 set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph")
