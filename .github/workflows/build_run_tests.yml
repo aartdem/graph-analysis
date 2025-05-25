@@ -13,15 +13,6 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Create GraphBLASTargets.cmake
-        run: |
-          mkdir -p build/GraphBLAS
-          cat > build/GraphBLAS/GraphBLASTargets.cmake << 'EOL'
-          if(NOT TARGET SuiteSparse::GraphBLAS)
-            add_library(SuiteSparse::GraphBLAS ALIAS graphblas)
-          endif()
-          EOL
-
       - name: Configure CMake
         run: cmake -S . -B build
 
