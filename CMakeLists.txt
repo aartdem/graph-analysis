@@ -47,7 +47,7 @@ set(GRAPHBLAS_INSTALL ON CACHE BOOL "Enable installation of GraphBLAS" FORCE)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/install" CACHE PATH "Installation directory" FORCE)
 
 # Build GraphBLAS first
-add_subdirectory(${GRAPHBLAS_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS EXCLUDE_FROM_ALL)
+add_subdirectory(${GRAPHBLAS_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS)
 
 # Set GraphBLAS include and library paths
 set(GraphBLAS_DIR "${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS" CACHE PATH "Path to GraphBLAS build directory" FORCE)
