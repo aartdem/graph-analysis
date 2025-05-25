@@ -28,6 +28,7 @@ namespace algos {
         buffer2 = std::vector<unsigned int>(n);
         edges_count = nnz_input;
         a = spla::Matrix::make(n, n, spla::UINT);
+        a->set_format(spla::FormatMatrix::AccCsr);
         a->set_fill_value(spla::Scalar::make_uint(INF));
 
         int u, v;
