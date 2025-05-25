@@ -39,18 +39,17 @@ if(NOT cmake_modules_POPULATED)
   FetchContent_MakeAvailable(cmake_modules)
 endif()
 
+# Build GraphBLAS library
 set(GRAPHBLAS_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/GraphBLAS")
-set(GRAPHBLAS_INCLUDE_DIR "${GRAPHBLAS_SRC_DIR}/Include")
+set(BUILD_GRB_STATIC_LIBRARY OFF CACHE BOOL "Build GraphBLAS as a shared library" FORCE)
+set(BUILD_TESTING OFF CACHE BOOL "Don't build GraphBLAS tests" FORCE)
+add_subdirectory(${GRAPHBLAS_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/GraphBLAS EXCLUDE_FROM_ALL)
 
-add_library(graphblas INTERFACE)
-target_include_directories(graphblas INTERFACE ${GRAPHBLAS_INCLUDE_DIR})
-
+# Build LAGraph library
 set(LAGRAPH_SRC_DIR "${CMAKE_SOURCE_DIR}/deps/LAGraph")
 set(LAGRAPH_INCLUDE_DIR "${LAGRAPH_SRC_DIR}/include")
-
-add_library(lagraph INTERFACE)
-target_include_directories(lagraph INTERFACE ${LAGRAPH_INCLUDE_DIR})
-target_link_libraries(lagraph INTERFACE graphblas)
+set(BUILD_TESTING OFF CACHE BOOL "Don't build LAGraph tests" FORCE)
+add_subdirectory(${LAGRAPH_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/LAGraph EXCLUDE_FROM_ALL)
 
 if(USE_CUDA)
   list(APPEND CMAKE_MODULE_PATH "${cmake_modules_SOURCE_DIR}")

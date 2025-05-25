@@ -26,7 +26,8 @@ set(SPLA_BUILD_OPENCL ON CACHE BOOL "Build library with opencl backend" FORCE)
 add_subdirectory(${SPLA_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/spla EXCLUDE_FROM_ALL)
 target_link_libraries(algos_lib PUBLIC spla)
 
-target_link_libraries(algos_lib PUBLIC lagraph graphblas)
+# Link to the actual GraphBLAS and LAGraph libraries, not just their interfaces
+target_link_libraries(algos_lib PUBLIC GraphBLAS LAGraph LAGraphX)
 
 target_include_directories(algos_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(algos_lib PUBLIC
