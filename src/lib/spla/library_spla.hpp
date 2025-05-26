@@ -6,4 +6,4 @@ namespace algos {
     void initialize_spla();
 
     void finalize_spla();
-}
+}// namespace algos

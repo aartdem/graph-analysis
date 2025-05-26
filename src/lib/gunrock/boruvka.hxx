@@ -9,28 +9,28 @@
 
 namespace algos {
 
-class BoruvkaGunrock : public MstAlgorithm {
-public:
-  BoruvkaGunrock();
-  ~BoruvkaGunrock() override;
+    class BoruvkaGunrock : public MstAlgorithm {
+    public:
+        BoruvkaGunrock();
+        ~BoruvkaGunrock() override;
 
-  void load_graph(const std::filesystem::path &file_path) override;
-  std::chrono::seconds compute() override;
-  Tree get_result() override;
+        void load_graph(const std::filesystem::path &file_path) override;
+        std::chrono::milliseconds compute() override;
+        Tree get_result() override;
 
-  using vertex_t = int;
-  using edge_t = int;
-  using weight_t = float;
+        using vertex_t = int;
+        using edge_t = int;
+        using weight_t = float;
 
-  vertex_t num_vertices;
-  edge_t num_edges;
+        vertex_t num_vertices;
+        edge_t num_edges;
 
-  struct EdgePair;
-  struct MinEdgeOp;
+        struct EdgePair;
+        struct MinEdgeOp;
 
-  class DeviceData;
-  std::unique_ptr<DeviceData> dev_;
-  std::vector<std::tuple<vertex_t, vertex_t, weight_t>> mst_edges;
-};
+        class DeviceData;
+        std::unique_ptr<DeviceData> dev_;
+        std::vector<std::tuple<vertex_t, vertex_t, weight_t>> mst_edges;
+    };
 
-} // namespace algos
+}// namespace algos

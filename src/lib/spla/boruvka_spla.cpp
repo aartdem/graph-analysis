@@ -1,10 +1,10 @@
 #include "boruvka_spla.hpp"
 
-#include <spla.hpp>
-#include <fstream>
-#include <sstream>
 #include <cmath>
+#include <fstream>
 #include <set>
+#include <spla.hpp>
+#include <sstream>
 #include <unordered_set>
 
 using namespace std;
@@ -91,7 +91,7 @@ namespace algos {
         auto values_view = MemView::make(buffer_int.data(), sparse_sz->as_int());
         mst1->read(keys_view, values_view);
         const auto keys = static_cast<int *>(keys_view->get_buffer());
-        const auto values = static_cast<int*>(values_view->get_buffer());
+        const auto values = static_cast<int *>(values_view->get_buffer());
         for (int i = 0; i < sparse_sz->as_int(); i++) {
             p[keys[i]] = static_cast<int>(std::round(values[i]));
         }
@@ -108,13 +108,13 @@ namespace algos {
         auto values_view = MemView::make(buffer_int.data(), sz->as_uint());
         v->read(keys_view, values_view);
         auto keys = static_cast<uint32_t *>(keys_view->get_buffer());
-        auto values = static_cast<uint32_t*>(values_view->get_buffer());
+        auto values = static_cast<uint32_t *>(values_view->get_buffer());
         for (int i = 0; i < sz->as_int(); i++) {
             std::cout << keys[i] << ' ' << values[i] << '\n';
         }
     }
 
-    size_t count_nonzero_elements(const ref_ptr<Matrix>& mat) {
+    size_t count_nonzero_elements(const ref_ptr<Matrix> &mat) {
         size_t count = 0;
         const uint n_rows = mat->get_n_rows();
         const uint n_cols = mat->get_n_cols();
@@ -131,7 +131,7 @@ namespace algos {
         return count;
     }
 
-    void print_matrix(const ref_ptr<Matrix>& m, const std::string& name = "") {
+    void print_matrix(const ref_ptr<Matrix> &m, const std::string &name = "") {
         std::cout << "-- " << name << " --\n";
         uint nnz = (uint)count_nonzero_elements(m);
 
@@ -143,7 +143,7 @@ namespace algos {
 
         auto rows = static_cast<uint32_t *>(rows_view->get_buffer());
         auto cols = static_cast<uint32_t *>(cols_view->get_buffer());
-        auto values = static_cast<uint32_t*>(values_view->get_buffer());
+        auto values = static_cast<uint32_t *>(values_view->get_buffer());
 
         for (uint i = 0; i < nnz; ++i) {
             std::cout << rows[i] << " " << cols[i] << " " << values[i] << "\n";
@@ -206,7 +206,7 @@ namespace algos {
             for (uint i = 0; i < n; i++) {
                 uint comp_i = f_array[i];
 
-                if (i == comp_i) {  // i - component root
+                if (i == comp_i) {// i - component root
                     uint cedge_i = cedge_array[i];
 
                     if (cedge_i != INF_ENCODED) {
@@ -215,7 +215,7 @@ namespace algos {
 
                         // Find the source of the minimum edge
                         uint src = UINT_MAX;
-                        for (uint v : comp_to_vertices[comp_i]) {
+                        for (uint v: comp_to_vertices[comp_i]) {
                             if (edge_array[v] == cedge_i) {
                                 src = v;
                                 break;
@@ -235,20 +235,20 @@ namespace algos {
 
                         if (new_comp != comp_i) {
                             comp_to_vertices[new_comp].insert(
-                                comp_to_vertices[new_comp].end(),
-                                comp_to_vertices[comp_i].begin(),
-                                comp_to_vertices[comp_i].end());
+                                    comp_to_vertices[new_comp].end(),
+                                    comp_to_vertices[comp_i].begin(),
+                                    comp_to_vertices[comp_i].end());
                             comp_to_vertices[comp_i].clear();
                         }
                         if (new_comp != comp_dest) {
                             comp_to_vertices[new_comp].insert(
-                                comp_to_vertices[new_comp].end(),
-                                comp_to_vertices[comp_dest].begin(),
-                                comp_to_vertices[comp_dest].end());
+                                    comp_to_vertices[new_comp].end(),
+                                    comp_to_vertices[comp_dest].begin(),
+                                    comp_to_vertices[comp_dest].end());
                             comp_to_vertices[comp_dest].clear();
                         }
 
-                        for (uint v : comp_to_vertices[new_comp]) {
+                        for (uint v: comp_to_vertices[new_comp]) {
                             f_array[v] = new_comp;
                         }
                     }
@@ -258,12 +258,12 @@ namespace algos {
             if (!added_edges) break;
 
             // filter A matrix
-            for (const uint comp : modified_comps) {
-                const auto& vertices = comp_to_vertices[comp];
+            for (const uint comp: modified_comps) {
+                const auto &vertices = comp_to_vertices[comp];
                 unordered_set set_vertices(vertices.begin(), vertices.end());
 
-                for (uint i : set_vertices) {
-                    for (uint j : adj_list[i]) {
+                for (uint i: set_vertices) {
+                    for (uint j: adj_list[i]) {
                         if (set_vertices.contains(j)) {
                             a->set_uint(i, j, INF_ENCODED);
                         }
@@ -272,4 +272,4 @@ namespace algos {
             }
         }
     }
-}
+}// namespace algos

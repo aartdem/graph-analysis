@@ -22,4 +22,4 @@ namespace algos {
         GrB_Matrix mst_matrix;
         uint num_vertices;
     };
-}
+}// namespace algos

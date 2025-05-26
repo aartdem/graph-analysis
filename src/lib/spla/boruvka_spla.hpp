@@ -1,7 +1,7 @@
 #pragma once
 
-#include<spla.hpp>
 #include "common/mst_algorithm.hpp"
+#include <spla.hpp>
 
 namespace algos {
     class BoruvkaSpla : public MstAlgorithm {
@@ -26,4 +26,4 @@ namespace algos {
         std::vector<int> buffer_int;
         std::vector<float> buffer_float;
     };
-}
+}// namespace algos
