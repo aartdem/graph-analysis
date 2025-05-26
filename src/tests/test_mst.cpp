@@ -1,9 +1,10 @@
+#include <filesystem>
+#include <gtest/gtest.h>
+
 #include "common/mst_algorithm.hpp"
 #include "lagraph/boruvka_lagraph.hpp"
 #include "spla/boruvka_spla.hpp"
 #include "spla/prim_spla.hpp"
-#include <filesystem>
-#include <gtest/gtest.h>
 
 namespace tests {
     struct GraphCase {
