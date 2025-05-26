@@ -38,7 +38,7 @@ def plot_comparison(df, algos, title, output_filename, color_map, ylim=None, ci_
     ax.set_xticks(x)
     ax.set_xticklabels(graphs, rotation=45, ha='right')
     ax.set_title(title)
-    ax.legend()
+    ax.legend(loc='upper left', bbox_to_anchor=(-0.01, 1.03))  # Move slightly higher and to the left
     ax.set_yscale('log')
     if ylim is not None:
         ax.set_ylim(ylim)
@@ -65,6 +65,7 @@ def main():
         'BoruvkaGunrock': 'tab:blue',
         'PrimGunrock': 'tab:blue',
         'BoruvkaSpla': 'tab:orange',
+        'BoruvkaSplaGpu': 'tab:orange',
         'PrimSpla': 'tab:orange',
         'BoruvkaSplaCpu': 'tab:green',
         'BoruvkaLagraph': 'tab:red'
