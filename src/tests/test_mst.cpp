@@ -1,13 +1,15 @@
-#include "common/mst_algorithm.hpp"
-#include "spla/boruvka_spla.hpp"
-#include "spla/prim_spla.hpp"
 #include <filesystem>
 #include <gtest/gtest.h>
+
+#include "common/mst_algorithm.hpp"
+#include "lagraph/boruvka_lagraph.hpp"
+#include "spla/boruvka_spla.hpp"
+#include "spla/prim_spla.hpp"
 
 namespace tests {
     struct GraphCase {
         std::string filename;
-        uint64_t expected_weight;
+        double expected_weight;
     };
 
     bool has_cycle(int v, int p, const std::vector<std::vector<int>> &g, std::vector<bool> &visited) {
@@ -62,6 +64,11 @@ namespace tests {
         return new algos::BoruvkaSpla();
     }
 
+    template<>
+    algos::MstAlgorithm *create_mst_algo<algos::BoruvkaLagraph>() {
+        return new algos::BoruvkaLagraph();
+    }
+
     template<typename T>
     class MstAlgorithmTest : public ::testing::Test {
     protected:
@@ -72,7 +79,7 @@ namespace tests {
         algos::MstAlgorithm *const algo;
     };
 
-    using AlgosTypes = ::testing::Types<algos::PrimSpla, algos::BoruvkaSpla>;// extend this with other MST algorimths
+    using AlgosTypes = ::testing::Types<algos::BoruvkaSpla, algos::PrimSpla, algos::BoruvkaLagraph>;// extend this with other MST algorimths
     TYPED_TEST_SUITE(MstAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {
@@ -90,7 +97,7 @@ namespace tests {
             this->algo->load_graph(file);
             this->algo->compute();
             auto res = this->algo->get_result();
-            ASSERT_EQ(test_case.expected_weight, res.weight);
+            ASSERT_FLOAT_EQ(test_case.expected_weight, res.weight);
             ASSERT_TRUE(is_tree_or_forest(res.parent));
         }
     }

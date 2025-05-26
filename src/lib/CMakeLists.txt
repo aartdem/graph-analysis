@@ -13,9 +13,9 @@ add_library(algos_lib STATIC ${LIB_SOURCES})
 
 if(USE_CUDA)
     set_target_properties(algos_lib PROPERTIES
-      CUDA_SEPARABLE_COMPILATION ON
-      POSITION_INDEPENDENT_CODE ON
-      CUDA_RESOLVE_DEVICE_SYMBOLS ON
+            CUDA_SEPARABLE_COMPILATION ON
+            POSITION_INDEPENDENT_CODE ON
+            CUDA_RESOLVE_DEVICE_SYMBOLS ON
     )
 endif()
 
@@ -26,17 +26,18 @@ set(SPLA_BUILD_OPENCL ON CACHE BOOL "Build library with opencl backend" FORCE)
 add_subdirectory(${SPLA_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/spla EXCLUDE_FROM_ALL)
 target_link_libraries(algos_lib PUBLIC spla)
 
-target_link_libraries(algos_lib PUBLIC lagraph graphblas)
+# Link to the actual GraphBLAS and LAGraph libraries, not just their interfaces
+target_link_libraries(algos_lib PUBLIC GraphBLAS LAGraph LAGraphX)
 
 target_include_directories(algos_lib PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_include_directories(algos_lib PUBLIC 
-  ${CMAKE_SOURCE_DIR}/deps/LAGraph/include
-  ${CMAKE_SOURCE_DIR}/deps/GraphBLAS/Include)
+target_include_directories(algos_lib PUBLIC
+        ${CMAKE_SOURCE_DIR}/deps/LAGraph/include
+        ${CMAKE_SOURCE_DIR}/deps/GraphBLAS/Include)
 
 if(USE_CUDA)
-  target_include_directories(algos_lib PUBLIC
-    ${CMAKE_SOURCE_DIR}/deps/gunrock/include
-    ${CUDAToolkit_INCLUDE_DIRS} 
-    ${CMAKE_SOURCE_DIR}/deps/gunrock/third_party/Moderngpu/src 
-    ${CMAKE_SOURCE_DIR}/deps/gunrock/third_party/mmio)
+    target_include_directories(algos_lib PUBLIC
+            ${CMAKE_SOURCE_DIR}/deps/gunrock/include
+            ${CUDAToolkit_INCLUDE_DIRS}
+            ${CMAKE_SOURCE_DIR}/deps/gunrock/third_party/Moderngpu/src
+            ${CMAKE_SOURCE_DIR}/deps/gunrock/third_party/mmio)
 endif()

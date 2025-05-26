@@ -1,6 +1,8 @@
 #pragma once
 #include "common/mst_algorithm.hpp"
 
+#include "GraphBLAS.h"
+
 namespace algos {
     class BoruvkaLagraph : public MstAlgorithm {
 
@@ -16,5 +18,8 @@ namespace algos {
 
         std::unique_ptr<Tree> tree = nullptr;
         uint64_t weight = 0;
+        GrB_Matrix matrix;
+        GrB_Matrix mst_matrix;
+        uint num_vertices;
     };
 }// namespace algos

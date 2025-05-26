@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "lagraph/boruvka_lagraph.hpp"
 #include "spla/boruvka_spla.hpp"
 #include "spla/prim_spla.hpp"
 
@@ -28,7 +29,9 @@ using namespace std;
 using namespace algos;
 
 template<typename T>
-MstAlgorithm *create_algorithm() { return new T(); }
+MstAlgorithm *create_algorithm() {
+    return new T();
+}
 
 struct BenchmarkResult {
     string algorithm_name;
@@ -37,14 +40,12 @@ struct BenchmarkResult {
 };
 
 template<typename AlgoType>
-BenchmarkResult run_benchmark(const string &algo_name, const string &graph_path,
-                              int num_runs = 20) {
+BenchmarkResult run_benchmark(const string &algo_name, const string &graph_path, int num_runs = 20) {
     BenchmarkResult result;
     result.algorithm_name = algo_name;
     result.graph_name = filesystem::path(graph_path).filename().string();
 
-    cout << "Running " << algo_name << " on " << result.graph_name << "..."
-         << endl;
+    cout << "Running " << algo_name << " on " << result.graph_name << "..." << endl;
 
     result.execution_times.reserve(num_runs);
     for (int i = 0; i < num_runs; ++i) {
@@ -64,8 +65,7 @@ BenchmarkResult run_benchmark(const string &algo_name, const string &graph_path,
     return result;
 }
 
-void save_results_to_csv(const vector<BenchmarkResult> &results,
-                         const string &output_file) {
+void save_results_to_csv(const vector<BenchmarkResult> &results, const string &output_file) {
     ofstream file(output_file);
 
     if (!file.is_open()) {
@@ -80,8 +80,8 @@ void save_results_to_csv(const vector<BenchmarkResult> &results,
 
     for (const auto &result: results) {
         file << result.algorithm_name << "," << result.graph_name;
-        for (double execution_time: result.execution_times) {
-            file << "," << execution_time;
+        for (size_t i = 0; i < result.execution_times.size(); ++i) {
+            file << "," << result.execution_times[i];
         }
         file << endl;
     }
@@ -100,26 +100,19 @@ int main() {
 #endif
 
     // List of algorithms to benchmark
-    vector<pair<string, function<BenchmarkResult(const string &, int)>>>
-            algorithms = {{"PrimSpla", [](const string &graph_path, int num_runs) {
-                               return run_benchmark<PrimSpla>("PrimSpla", graph_path,
-                                                              num_runs);
-                           }}};
-    algorithms.emplace_back("BoruvkaSpla", [](const string &graph_path, int num_runs) {
-        return run_benchmark<BoruvkaSpla>("BoruvkaSpla", graph_path, num_runs);
-    });
+    vector<pair<string, function<BenchmarkResult(const string &, int)>>> algorithms = {
+            {"BoruvkaLagraph", [](const string &graph_path, int num_runs) {
+                 return run_benchmark<BoruvkaLagraph>("BoruvkaLagraph", graph_path, num_runs);
+             }}};
 
 #if USE_GUNROCK
-    algorithms.push_back(
-            {"BoruvkaGunrock", [](const string &graph_path, int num_runs) {
-                 return run_benchmark<BoruvkaGunrock>("BoruvkaGunrock", graph_path,
-                                                      num_runs);
-             }});
+    algorithms.push_back({"BoruvkaGunrock", [](const string &graph_path, int num_runs) {
+                              return run_benchmark<BoruvkaGunrock>("BoruvkaGunrock", graph_path, num_runs);
+                          }});
 
-    algorithms.push_back(
-            {"PrimGunrock", [](const string &graph_path, int num_runs) {
-                 return run_benchmark<PrimGunrock>("PrimGunrock", graph_path, num_runs);
-             }});
+    algorithms.push_back({"PrimGunrock", [](const string &graph_path, int num_runs) {
+                              return run_benchmark<PrimGunrock>("PrimGunrock", graph_path, num_runs);
+                          }});
 #endif
 
     // Find all .mtx files in the data directory
@@ -132,18 +125,16 @@ int main() {
 
     if (graph_files.empty()) {
         cout << "No .mtx files found in the data directory." << endl;
-        cout << "Please place graph files in the data directory and try again."
-             << endl;
+        cout << "Please place graph files in the data directory and try again." << endl;
         return 1;
     }
 
-    cout << "Found " << graph_files.size()
-         << " graph files in the data directory." << endl;
+    cout << "Found " << graph_files.size() << " graph files in the data directory." << endl;
     for (const auto &file: graph_files) {
         cout << "  - " << filesystem::path(file).filename().string() << endl;
     }
 
-    const int NUM_RUNS = 20;
+    const int NUM_RUNS = 1;
 
     vector<BenchmarkResult> all_results;
     for (const auto &graph_file: graph_files) {
@@ -152,9 +143,8 @@ int main() {
                 BenchmarkResult result = benchmark_func(graph_file, NUM_RUNS);
                 all_results.push_back(result);
             } catch (const exception &e) {
-                cerr << "Error running " << algo_name << " on "
-                     << filesystem::path(graph_file).filename().string() << ": "
-                     << e.what() << endl;
+                cerr << "Error running " << algo_name << " on " << filesystem::path(graph_file).filename().string()
+                     << ": " << e.what() << endl;
             }
         }
     }
