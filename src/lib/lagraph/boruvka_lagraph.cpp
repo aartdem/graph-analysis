@@ -2,13 +2,13 @@
 
 #include <LAGraph.h>
 #include <LAGraphX.h>
-#include <fstream>
-#include <sstream>
-#include <string>
 #include <chrono>
-#include <iostream>
-#include <stdexcept>
+#include <fstream>
 #include <functional>
+#include <iostream>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 namespace algos {
 
@@ -64,25 +64,24 @@ namespace algos {
         LAGraph_msf(&mst_matrix, matrix, false, msg);
 
         GrB_Matrix_reduce_UINT64(
-            &weight,
-            GrB_NULL,
-            GrB_PLUS_MONOID_UINT64,
-            mst_matrix,
-            GrB_NULL
-        );
+                &weight,
+                GrB_NULL,
+                GrB_PLUS_MONOID_UINT64,
+                mst_matrix,
+                GrB_NULL);
     }
 
     // Replace complex function with simple stub
     Tree BoruvkaLagraph::get_result() {
         // Create a placeholder result
         std::vector<int> parent(num_vertices, -1);
-        
+
         // Simple parent array where each node points to previous node except node 0
         for (uint i = 1; i < num_vertices; i++) {
             parent[i] = i - 1;
         }
-        
+
         GrB_Matrix_free(&mst_matrix);
         return Tree{num_vertices, parent, weight};
     }
-}
+}// namespace algos
