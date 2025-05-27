@@ -1,6 +1,6 @@
 # Graph Analysis
 
-Educational project for graph algorithms analysis with GPU acceleration.
+Educational project for graph algorithms analysis with CPU and GPU acceleration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
@@ -15,7 +15,8 @@ The experiment compares different implementations of the following MST algorithm
     - PrimGunrock - Implementation using Gunrock (author: Lanovaya)
 
 2. **Borůvka's Algorithm**:
-    - BoruvkaSpla - Implementation using SPLA (author: Rzhankov)
+    - BoruvkaSpla - Implementation using SPLA with OpenCL backend (author: Rzhankov)
+    - BoruvkaLagraph - Implementation using Lagraph - wrapper over GraphBLAS (author: Rzhankov)
     - BoruvkaGunrock - Implementation using Gunrock (author: Lanovaya)
 
 

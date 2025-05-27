@@ -25,20 +25,20 @@ def plot_comparison(df, algos, title, output_filename, color_map, ylim=None, ci_
 
     # Plot
     x = np.arange(len(graphs))
-    width = 0.35
+    width = 0.8 / len(algos)  # Adjust width based on number of algorithms
     fig, ax = plt.subplots()
     error_kwargs = dict(elinewidth=1.5, capsize=5)
 
-    ax.bar(x - width / 2, means[0], width, yerr=cis[0], error_kw=error_kwargs,
-           label=algos[0], color=color_map.get(algos[0]))
-    ax.bar(x + width / 2, means[1], width, yerr=cis[1], error_kw=error_kwargs,
-           label=algos[1], color=color_map.get(algos[1]))
+    for i, algo in enumerate(algos):
+        offset = (i - (len(algos) - 1) / 2) * width
+        ax.bar(x + offset, means[i], width, yerr=cis[i], error_kw=error_kwargs,
+               label=algo, color=color_map.get(algo))
 
     ax.set_ylabel('Time (seconds)')
     ax.set_xticks(x)
     ax.set_xticklabels(graphs, rotation=45, ha='right')
     ax.set_title(title)
-    ax.legend()
+    ax.legend(loc='upper left', bbox_to_anchor=(-0.01, 1.03))  # Move slightly higher and to the left
     ax.set_yscale('log')
     if ylim is not None:
         ax.set_ylim(ylim)
@@ -50,7 +50,7 @@ def plot_comparison(df, algos, title, output_filename, color_map, ylim=None, ci_
 
 def main():
     # Load and transform data
-    raw = pd.read_csv('benchmark_results.csv')
+    raw = pd.read_csv('benchmark_results_all.csv')
     time_cols = [col for col in raw.columns if col not in ['Algorithm', 'Graph']]
     df = raw.melt(id_vars=['Algorithm', 'Graph'], value_vars=time_cols,
                   var_name='run', value_name='time')
@@ -60,17 +60,20 @@ def main():
     # Convert milliseconds to seconds
     df['time'] = df['time'] / 1000.0
 
-    # Define color mapping: Gunrock always blue, Spla orange
+    # Define color mapping: Gunrock always blue, Spla orange/green, Lagraph red
     color_map = {
         'BoruvkaGunrock': 'tab:blue',
         'PrimGunrock': 'tab:blue',
         'BoruvkaSpla': 'tab:orange',
-        'PrimSpla': 'tab:orange'
+        'BoruvkaSplaGpu': 'tab:orange',
+        'PrimSpla': 'tab:orange',
+        'BoruvkaSplaCpu': 'tab:green',
+        'BoruvkaLagraph': 'tab:red'
     }
 
     # Define comparisons
     comparisons = [
-        (['BoruvkaSpla', 'BoruvkaGunrock'], 'Boruvka: Spla GPU vs Gunrock GPU', 'comparison_boruvka.png'),
+        (['BoruvkaSplaGpu', 'BoruvkaSplaCpu', 'BoruvkaGunrock', 'BoruvkaLagraph'], 'Boruvka: Spla GPU vs Spla CPU vs Gunrock GPU vs Lagraph CPU', 'comparison_boruvka.png'),
         (['PrimSpla', 'PrimGunrock'], 'Prim: Spla CPU vs Gunrock GPU', 'comparison_prim.png')
     ]
 
