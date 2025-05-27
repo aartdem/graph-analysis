@@ -26,8 +26,7 @@ namespace bench {
         result.algorithm_name = algo_name;
         result.graph_name = filesystem::path(graph_path).filename().string();
 
-        cout << "Running " << algo_name << " on " << result.graph_name << "..."
-             << endl;
+        cout << "Running " << algo_name << " on " << result.graph_name << "..." << endl;
 
         result.execution_times.reserve(num_runs);
         for (int i = 0; i < num_runs; ++i) {
@@ -47,8 +46,7 @@ namespace bench {
         return result;
     }
 
-    inline void save_results_to_csv(const vector<BenchmarkResult> &results,
-                             const string &output_file) {
+    inline void save_results_to_csv(const vector<BenchmarkResult> &results, const string &output_file) {
         ofstream file(output_file);
 
         if (!file.is_open()) {
