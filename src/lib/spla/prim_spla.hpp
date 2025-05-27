@@ -22,8 +22,6 @@ namespace algos {
 
         void update(std::set<std::pair<unsigned int, unsigned int>> &s, const spla::ref_ptr<spla::Vector> &v);
 
-        using clock = std::chrono::steady_clock;
-
         uint n;
         int edges_count;
         const unsigned int INF = UINT32_MAX;
