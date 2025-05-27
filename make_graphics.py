@@ -2,10 +2,44 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import stats
+from pathlib import Path
+from csv import DictReader
+
+graphs_metadata_path = "graphs_metadata.csv"
+
+
+def load_graph_stats():
+    result = {}
+    with Path(graphs_metadata_path).expanduser().open(newline="", encoding="utf-8") as fh:
+        reader = DictReader(fh)
+        expected = {"Graph", "Vertexes", "Edges"}
+        if set(reader.fieldnames or []) != expected:
+            raise ValueError(
+                f"CSV must have header exactly: {', '.join(expected)}"
+            )
+
+        for row in reader:
+            name = row["Graph"].strip()
+            try:
+                v = float(row["Vertexes"])
+                e = float(row["Edges"])
+            except ValueError as exc:
+                raise ValueError(
+                    f"Invalid numeric value in row {reader.line_num}: {row}"
+                ) from exc
+            result[name] = (v, e)
+
+    return result
 
 
 def plot_comparison(df, algos, title, output_filename, color_map, ylim=None, ci_level=0.95):
-    graphs = sorted(df['Graph'].unique())
+    graphs_stats = load_graph_stats()
+
+    graphs = sorted(df["Graph"].unique(), key=lambda name: (
+        graphs_stats[name][0],
+        graphs_stats[name][1],
+        name
+    ))
     alpha = 1 - ci_level
 
     # Prepare data
@@ -73,7 +107,8 @@ def main():
 
     # Define comparisons
     comparisons = [
-        (['BoruvkaSplaGpu', 'BoruvkaSplaCpu', 'BoruvkaGunrock', 'BoruvkaLagraph'], 'Boruvka: Spla GPU vs Spla CPU vs Gunrock GPU vs Lagraph CPU', 'comparison_boruvka.png'),
+        (['BoruvkaSplaGpu', 'BoruvkaSplaCpu', 'BoruvkaGunrock', 'BoruvkaLagraph'],
+         'Boruvka: Spla GPU vs Spla CPU vs Gunrock GPU vs Lagraph CPU', 'comparison_boruvka.png'),
         (['PrimSpla', 'PrimGunrock'], 'Prim: Spla CPU vs Gunrock GPU', 'comparison_prim.png')
     ]
 
