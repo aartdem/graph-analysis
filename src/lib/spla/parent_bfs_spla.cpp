@@ -78,8 +78,8 @@ namespace algos {
         auto new_parent = Vector::make(n, INT);
         new_parent->set_fill_value(zero_int);
 
-//        auto visited = Vector::make(n, INT);
-//        visited->set_fill_value(zero_int);
+        //        auto visited = Vector::make(n, INT);
+        //        visited->set_fill_value(zero_int);
 
         auto new_front = Vector::make(n, INT);
         new_front->set_fill_value(zero_int);

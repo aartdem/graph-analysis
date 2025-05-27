@@ -64,10 +64,9 @@ target_compile_definitions(${BINARY}
         PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/test_data"
 )
 
-add_test(NAME MstAlgorithmTest
-        COMMAND ${BINARY})
+gtest_discover_tests(${BINARY})
 
 if(USE_CUDA)
-    set_tests_properties(MstAlgorithmTest PROPERTIES
+    set_tests_properties(${${BINARY}_TESTS} PROPERTIES
             ENVIRONMENT "CUDA_VISIBLE_DEVICES=0")
 endif()
