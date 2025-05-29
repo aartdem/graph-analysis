@@ -62,7 +62,7 @@ namespace algos {
         GrB_Vector_new(&parent, GrB_INT32, n);
         LAGraph_New(&G, &matrix, LAGraph_ADJACENCY_UNDIRECTED, msg);
 
-//        LAGraph_Graph_Print(G, static_cast<LAGraph_PrintLevel>(2), stdout, msg);
+        //        LAGraph_Graph_Print(G, static_cast<LAGraph_PrintLevel>(2), stdout, msg);
 
         for (int i = 0; i < n; i++) {
             if (p[i] == -1) {
@@ -77,8 +77,6 @@ namespace algos {
                 }
             }
         }
-
-//        LAGraph_Vector_Print(parent, static_cast<LAGraph_PrintLevel>(3), stdout, msg);
 
         GrB_Matrix_free(&matrix);
         LAGraph_Delete(&G, msg);
