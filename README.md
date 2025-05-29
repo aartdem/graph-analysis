@@ -19,7 +19,9 @@ The experiment compares different implementations of the following MST algorithm
     - BoruvkaLagraph - Implementation using Lagraph - wrapper over GraphBLAS (author: Rzhankov)
     - BoruvkaGunrock - Implementation using Gunrock (author: Lanovaya)
 
-
+3. **Single Source Parent BFS**:
+    - ParentBfsSpla - Implementation using SPLA (author: Demchenko)
+    - ParentBfsLagraph - Implementation using Lagraph - wrapper over GraphBLAS (author: Demchenko)
 ## Overview
 
 This educational project provides a platform for analyzing various graph algorithms using different implementations. It integrates several high-performance graph processing libraries including SPLA, Gunrock, and LAGraph to enable comparative analysis of graph algorithm performance.
