@@ -1,0 +1,12 @@
+Graph,Vertexes,Edges
+CA-Coauthors-Dblp,0.54,15
+Graph500-Kronecker-R-MAT,2,32
+Delaunay-n24,4.1,3.1
+USA-road-d-USA,4.1,8.5
+RGG,4.1,30
+USA-road-CTR.mtx,14.1,34.3
+USA-road-E.mtx,3.6,8.8
+USA-road-FLA.mtx,1,2.7
+USA-road-USA.mtx,24,58.3
+USA-road-W.mtx,6.3,15.2
+USA-road-LKS.mtx,2.7,6.8

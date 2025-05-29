@@ -21,14 +21,17 @@ include(GoogleTest)
 enable_testing()
 
 if(USE_CUDA)
-    file(GLOB TEST_SOURCES
-            "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-            "${CMAKE_CURRENT_SOURCE_DIR}/*.cu"
-    )
+  file(GLOB TEST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cu"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.hxx*"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
+  )
 else()
-    file(GLOB TEST_SOURCES
-            "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-    )
+  file(GLOB TEST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+  )
 endif()
 
 set(BINARY ${CMAKE_PROJECT_NAME}_test)
@@ -61,10 +64,9 @@ target_compile_definitions(${BINARY}
         PRIVATE DATA_DIR="${CMAKE_SOURCE_DIR}/test_data"
 )
 
-add_test(NAME MstAlgorithmTest
-        COMMAND ${BINARY})
+gtest_discover_tests(${BINARY})
 
 if(USE_CUDA)
-    set_tests_properties(MstAlgorithmTest PROPERTIES
+    set_tests_properties(${${BINARY}_TESTS} PROPERTIES
             ENVIRONMENT "CUDA_VISIBLE_DEVICES=0")
 endif()
