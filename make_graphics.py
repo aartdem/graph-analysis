@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from pathlib import Path
 from csv import DictReader
+from matplotlib.ticker import LogLocator, LogFormatter
 
 graphs_metadata_path = "graphs_metadata.csv"
 
@@ -77,6 +78,9 @@ def plot_comparison(df, algos, title, output_filename, color_map, ylim=None, ci_
     if ylim is not None:
         ax.set_ylim(ylim)
 
+    ax.set_axisbelow(True)
+    ax.yaxis.grid(True, which='major', linestyle='--', linewidth=1, color="#555555", alpha=0.95)
+
     plt.tight_layout()
     plt.savefig(output_filename, dpi=600)
     plt.close()
@@ -107,9 +111,10 @@ def main():
 
     # Define comparisons
     comparisons = [
-        (['BoruvkaSplaGpu', 'BoruvkaSplaCpu', 'BoruvkaGunrock', 'BoruvkaLagraph'],
-         'Boruvka: Spla GPU vs Spla CPU vs Gunrock GPU vs Lagraph CPU', 'comparison_boruvka.png'),
-        (['PrimSpla', 'PrimGunrock'], 'Prim: Spla CPU vs Gunrock GPU', 'comparison_prim.png')
+        # (['BoruvkaSplaGpu', 'BoruvkaSplaCpu', 'BoruvkaGunrock', 'BoruvkaLagraph'],
+        #  'Boruvka: Spla GPU vs Spla CPU vs Gunrock GPU vs Lagraph CPU', 'comparison_boruvka.png'),
+        # (['PrimSpla', 'PrimGunrock'], 'Prim: Spla CPU (no OpenCL) vs Gunrock GPU', 'comparison_prim.png'),
+        (['BfsSpla', 'BfsLagraph'], 'Parent Bfs: Spla CPU (no OpenCL) vs LaGraph', 'comparison_bfs.png')
     ]
 
     # Compute common y-limits across all comparisons
