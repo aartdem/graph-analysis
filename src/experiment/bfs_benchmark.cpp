@@ -33,17 +33,12 @@ int main() {
         return run_benchmark<ParentBfsSpla>("BfsSpla", graph_path, num_runs);
     });
 
-//     Find all .mtx files in the data directory
-
-     vector<string> graph_files;
+    vector<string> graph_files;
     for (const auto &entry: filesystem::directory_iterator(DATA_DIR)) {
         if (entry.path().extension() == ".mtx") {
             graph_files.push_back(entry.path().string());
         }
     }
-//    vector<string> graph_files = {
-//            "/home/aartdem/graphs/graph-analysis/data/USA-road-FLA.mtx"
-//    };
 
     if (graph_files.empty()) {
         cout << "No .mtx files found in the data directory." << endl;
