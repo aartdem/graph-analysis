@@ -1,16 +1,27 @@
 #include "common/parent_bfs_algorithm.hpp"
 #include "spla/parent_bfs_spla.hpp"
+#include "lagraph/parent_bfs_lagraph.hpp"
 #include "test_commons.hpp"
 #include <filesystem>
+
+#ifdef I
+#undef I
+#endif
+
 #include <gtest/gtest.h>
 
 namespace tests {
     template<class T>
-    algos::ParentBfsAlgorithm *create_bfs_algo();// implement parametrized function for each MST algorithm
+    algos::ParentBfsAlgorithm *create_bfs_algo();// implement parametrized function for each BFS algorithm
 
     template<>
     algos::ParentBfsAlgorithm *create_bfs_algo<algos::ParentBfsSpla>() {
         return new algos::ParentBfsSpla();
+    }
+
+    template<>
+    algos::ParentBfsAlgorithm *create_bfs_algo<algos::ParentBfsLagraph>() {
+        return new algos::ParentBfsLagraph();
     }
 
     template<typename T>
@@ -23,12 +34,13 @@ namespace tests {
         algos::ParentBfsAlgorithm *const algo;
     };
 
-    using AlgosTypes = ::testing::Types<algos::ParentBfsSpla>;// extend this with other MST algorimths
+    using AlgosTypes = ::testing::Types<algos::ParentBfsSpla, algos::ParentBfsLagraph>;
     TYPED_TEST_SUITE(BfsAlgorithmTest, AlgosTypes);
 
     static const GraphCase mst_test_cases[] = {
             {"test1_unweighted.mtx"},
-            {"small_unweighted.mtx"}};
+            {"small_unweighted.mtx"},
+            {"two_components_unw.mtx"}};
 
     TYPED_TEST(BfsAlgorithmTest, IsCorrectParentTree) {
         for (const GraphCase &test_case: mst_test_cases) {

@@ -117,7 +117,7 @@ namespace algos {
     Tree ParentBfsSpla::get_result() {
         std::vector<int> p(n, -1);
         if (n <= 1 || edges_count == 0) {
-            return Tree{n, p, 0};
+            return Tree{static_cast<uint>(n), p, 0};
         }
         auto sparse_sz = spla::Scalar::make_uint(0);
         spla::exec_v_count_mf(sparse_sz, parent);
@@ -133,6 +133,6 @@ namespace algos {
                 p[cur_v] = cur_p - 1;
             }
         }
-        return Tree{n, p, 0};
+        return Tree{static_cast<uint>(n), p, 0};
     }
 }// namespace algos
