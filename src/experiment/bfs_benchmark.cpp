@@ -5,9 +5,9 @@
 #include <vector>
 
 #include "bench_commons.h"
-#include "spla/parent_bfs_spla.hpp"
-#include "spla/library_spla.hpp"
 #include "lagraph/parent_bfs_lagraph.hpp"
+#include "spla/library_spla.hpp"
+#include "spla/parent_bfs_spla.hpp"
 
 #ifndef DATA_DIR
 #define DATA_DIR "data"

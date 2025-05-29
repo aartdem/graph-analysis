@@ -1,6 +1,6 @@
 #include "common/parent_bfs_algorithm.hpp"
-#include "spla/parent_bfs_spla.hpp"
 #include "lagraph/parent_bfs_lagraph.hpp"
+#include "spla/parent_bfs_spla.hpp"
 #include "test_commons.hpp"
 #include <filesystem>
 
