@@ -1,11 +1,10 @@
 #include "boruvka_lagraph.hpp"
 
-#include <LAGraph.h>
+#include "GraphBLAS.h"
 #include <LAGraphX.h>
 #include <chrono>
 #include <fstream>
 #include <functional>
-#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -34,6 +33,7 @@ namespace algos {
             throw std::runtime_error("Matrix must be square");
         }
 
+        LAGraph_Init(msg);
         GrB_init(GrB_NONBLOCKING);
 
         GrB_Matrix_new(&matrix, GrB_UINT64, n_rows, n_cols);
@@ -60,7 +60,6 @@ namespace algos {
     }
 
     void BoruvkaLagraph::compute_() {
-        char msg[256];
         LAGraph_msf(&mst_matrix, matrix, false, msg);
 
         GrB_Matrix_reduce_UINT64(
@@ -82,6 +81,9 @@ namespace algos {
         }
 
         GrB_Matrix_free(&mst_matrix);
+        GrB_Matrix_free(&matrix);
+        GrB_finalize();
+        LAGraph_Finalize(msg);
         return Tree{num_vertices, parent, weight};
     }
 }// namespace algos
