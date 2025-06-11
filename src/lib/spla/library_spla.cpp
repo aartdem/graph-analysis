@@ -7,6 +7,7 @@ namespace algos {
 
     void print_spla_accelerator_info() {
         library = spla::Library::get();
+
         std::string acc_info;
         library->get_accelerator_info(acc_info);
         std::cout << "# Accelerator: " << acc_info << std::endl;

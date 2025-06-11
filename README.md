@@ -19,6 +19,9 @@ The experiment compares different implementations of the following MST algorithm
     - BoruvkaLagraph - Implementation using Lagraph - wrapper over GraphBLAS (author: Rzhankov)
     - BoruvkaGunrock - Implementation using Gunrock (author: Lanovaya)
 
+3. **Parent BFS Algorithm**:
+    - BFSSpla - Implementation using SPLA (author: Demchenko)
+    - BFSLaGraph - Implementation using Lagraph - wrapper over GraphBLAS (author: Demchenko)
 
 ## Overview
 
