@@ -70,5 +70,4 @@ namespace bench {
         file.close();
         cout << "Results saved to " << output_file << endl;
     }
-}
-
+}// namespace bench

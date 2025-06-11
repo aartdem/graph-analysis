@@ -2,6 +2,7 @@
 #include "common/mst_algorithm.hpp"
 
 #include "GraphBLAS.h"
+#include <LAGraph.h>
 
 namespace algos {
     class BoruvkaLagraph : public MstAlgorithm {
@@ -16,10 +17,10 @@ namespace algos {
     private:
         void compute_();
 
-        std::unique_ptr<Tree> tree = nullptr;
+        char msg[LAGRAPH_MSG_LEN];
         uint64_t weight = 0;
-        GrB_Matrix matrix;
-        GrB_Matrix mst_matrix;
-        uint num_vertices;
+        GrB_Matrix matrix = nullptr;
+        GrB_Matrix mst_matrix = nullptr;
+        uint num_vertices = 0;
     };
 }// namespace algos

@@ -1,11 +1,10 @@
 #include "boruvka_lagraph.hpp"
 
-#include <LAGraph.h>
+#include "GraphBLAS.h"
 #include <LAGraphX.h>
 #include <chrono>
 #include <fstream>
 #include <functional>
-#include <iostream>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -60,7 +59,6 @@ namespace algos {
     }
 
     void BoruvkaLagraph::compute_() {
-        char msg[256];
         LAGraph_msf(&mst_matrix, matrix, false, msg);
 
         GrB_Matrix_reduce_UINT64(
