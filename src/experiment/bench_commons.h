@@ -21,10 +21,22 @@ namespace bench {
     };
 
     template<typename AlgoType>
-    BenchmarkResult run_benchmark(const string &algo_name, const string &graph_path, int num_runs) {
+    BenchmarkResult run_benchmark(const string &algo_name, const string &graph_path, int warm_up_runs, int num_runs) {
         BenchmarkResult result;
         result.algorithm_name = algo_name;
         result.graph_name = filesystem::path(graph_path).filename().string();
+
+        cout << "Warm up before exec " << algo_name << " on " << result.graph_name << "..." << endl;
+
+        for (int i = 0; i < warm_up_runs; ++i) {
+            const unique_ptr<Algorithm> algorithm(create_algorithm<AlgoType>());
+
+            cout << "  Run " << (i + 1) << "/" << warm_up_runs << "..." << flush;
+
+            algorithm->load_graph(graph_path);
+            auto time = algorithm->compute();
+            cout << " " << fixed << setprecision(2) << time.count() << " ms" << endl;
+        }
 
         cout << "Running " << algo_name << " on " << result.graph_name << "..." << endl;
 

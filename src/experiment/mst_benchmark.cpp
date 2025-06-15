@@ -42,14 +42,13 @@ int main() {
     // List of algorithms to benchmark
     vector<pair<string, function<BenchmarkResult(const string &, int)>>>
             algorithms = {{"PrimSpla", [](const string &graph_path, int num_runs) {
-                               return run_benchmark<PrimSpla>("PrimSpla", graph_path,
-                                                              num_runs);
+                               return run_benchmark<PrimSpla>("PrimSpla", graph_path, 0, num_runs);
                            }}};
     algorithms.emplace_back("BoruvkaSpla", [](const string &graph_path, int num_runs) {
-        return run_benchmark<BoruvkaSpla>("BoruvkaSpla", graph_path, num_runs);
+        return run_benchmark<BoruvkaSpla>("BoruvkaSpla", graph_path, 0, num_runs);
     });
     algorithms.emplace_back("BoruvkaLagraph", [](const string &graph_path, int num_runs) {
-        return run_benchmark<BoruvkaLagraph>("BoruvkaLagraph", graph_path, num_runs);
+        return run_benchmark<BoruvkaLagraph>("BoruvkaLagraph", graph_path, 0, num_runs);
     });
 
 #if USE_GUNROCK
