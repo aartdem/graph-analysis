@@ -51,7 +51,7 @@ int main() {
     }
 
     const int WARM_UP_RUNS = 3;
-    const int MEASURE_RUNS = 5;
+    const int MEASURE_RUNS = 20;
 
     vector<BenchmarkResult> all_results;
     for (const auto &graph_file: graph_files) {
