@@ -23,14 +23,13 @@ int main() {
     print_spla_accelerator_info();
 
     // List of algorithms to benchmark
-    vector<pair<string, function<BenchmarkResult(const string &, int)>>> algorithms{};
+    vector<pair<string, function<BenchmarkResult(const string &, int, int)>>> algorithms{};
 
-    algorithms.emplace_back("BfsLagraph", [](const string &graph_path, int num_runs) {
-        return run_benchmark<ParentBfsLagraph>("BfsLagraph", graph_path,
-                                               num_runs);
+    algorithms.emplace_back("BfsLagraph", [](const string &graph_path, int warm_up, int measure) {
+        return run_benchmark<ParentBfsLagraph>("BfsLagraph", graph_path, warm_up, measure);
     });
-    algorithms.emplace_back("BfsSpla", [](const string &graph_path, int num_runs) {
-        return run_benchmark<ParentBfsSpla>("BfsSpla", graph_path, num_runs);
+    algorithms.emplace_back("BfsSpla", [](const string &graph_path, int warm_up, int measure) {
+        return run_benchmark<ParentBfsSpla>("BfsSpla", graph_path, warm_up, measure);
     });
 
     vector<string> graph_files;
@@ -51,13 +50,14 @@ int main() {
         cout << "  - " << filesystem::path(file).filename().string() << endl;
     }
 
-    const int NUM_RUNS = 20;
+    const int WARM_UP_RUNS = 3;
+    const int MEASURE_RUNS = 20;
 
     vector<BenchmarkResult> all_results;
     for (const auto &graph_file: graph_files) {
         for (const auto &[algo_name, benchmark_func]: algorithms) {
             try {
-                BenchmarkResult result = benchmark_func(graph_file, NUM_RUNS);
+                BenchmarkResult result = benchmark_func(graph_file, WARM_UP_RUNS, MEASURE_RUNS);
                 all_results.push_back(result);
             } catch (const exception &e) {
                 cerr << "Error running " << algo_name << " on " << filesystem::path(graph_file).filename().string()
