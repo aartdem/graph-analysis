@@ -1,59 +1,60 @@
-# Graph Analysis
+# Анализ графов
 
-Educational project for graph algorithms analysis with CPU and GPU acceleration.
+Проект для исследования графовых алгоритмов с ускорением на CPU и GPU.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Лицензия: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
-### Algorithms and Implementations
+## О проекте
 
-Slides are located in the "slides" directory.
+Проект предназначен для изучения и сравнительного анализа графовых алгоритмов в различных реализациях. В нём используются высокопроизводительные библиотеки обработки графов SPLA, Gunrock и LAGraph, что позволяет сравнивать производительность алгоритмов на CPU и GPU.
 
-The experiment compares different implementations of the following MST algorithms:
+### Алгоритмы и реализации
 
-1. **Prim's Algorithm**:
-    - PrimSpla - Implementation using SPLA (author: Demchenko)
-    - PrimGunrock - Implementation using Gunrock (author: Lanovaya)
+Слайды к проекту находятся в каталоге `slides`.
 
-2. **Borůvka's Algorithm**:
-    - BoruvkaSpla - Implementation using SPLA with OpenCL backend (author: Rzhankov)
-    - BoruvkaLagraph - Implementation using Lagraph - wrapper over GraphBLAS (author: Rzhankov)
-    - BoruvkaGunrock - Implementation using Gunrock (author: Lanovaya)
+В рамках эксперимента сравниваются различные реализации следующих алгоритмов:
 
-3. **Parent BFS Algorithm**:
-    - BFSSpla - Implementation using SPLA (author: Demchenko)
-    - BFSLaGraph - Implementation using Lagraph - wrapper over GraphBLAS (author: Demchenko)
+1. **Алгоритм Прима**:
+    - PrimSpla — реализация на базе SPLA (автор: Демченко);
+    - PrimGunrock — реализация на базе Gunrock (автор: Лановая).
 
-## Overview
+2. **Алгоритм Борувки**:
+    - BoruvkaSpla — реализация на базе SPLA с бэкендом OpenCL (автор: Ржанков);
+    - BoruvkaLagraph — реализация на базе LAGraph, надстройки над GraphBLAS (автор: Ржанков);
+    - BoruvkaGunrock — реализация на базе Gunrock (автор: Лановая).
 
-This educational project provides a platform for analyzing various graph algorithms using different implementations. It integrates several high-performance graph processing libraries including SPLA, Gunrock, and LAGraph to enable comparative analysis of graph algorithm performance.
+3. **Поиск в ширину (BFS) с построением дерева родителей**:
+    - BFSSpla — реализация на базе SPLA (автор: Демченко);
+    - BFSLaGraph — реализация на базе LAGraph, надстройки над GraphBLAS (автор: Демченко).
 
-## Requirements
+## Системные требования
 
-- CMake (version 3.20 or higher)
-- C++20 compatible compiler
-- CUDA Toolkit 12.0+ (for GPU acceleration)
-- Python 3.7+ (for visualizing experiment results)
+- CMake версии 3.20 или новее;
+- компилятор с поддержкой C++20;
+- CUDA Toolkit 12.0 или новее — для ускорения вычислений на GPU;
+- Python 3.7 или новее — для визуализации результатов экспериментов.
 
-## Dependencies
+## Зависимости
 
-The project uses the following libraries:
-- **GraphBLAS** - Sparse linear algebra library for graph algorithms
-- **LAGraph** - Library of graph algorithms based on GraphBLAS
-- **Gunrock** - GPU-accelerated graph processing library
-- **SPLA** - Sparse linear algebra framework with GPU acceleration
+В проекте используются следующие библиотеки:
 
-All dependencies are included as git submodules.
+- **GraphBLAS** — библиотека разреженной линейной алгебры для реализации графовых алгоритмов;
+- **LAGraph** — библиотека графовых алгоритмов на базе GraphBLAS;
+- **Gunrock** — библиотека обработки графов с ускорением на GPU;
+- **SPLA** — фреймворк разреженной линейной алгебры с поддержкой ускорения на GPU.
 
-## Getting Started
+Все зависимости подключены как Git-подмодули.
 
-### Clone the repository
+## Начало работы
+
+### Клонирование репозитория
 
 ```bash
 git clone --recurse-submodules https://github.com/aartdem/graph-analysis.git
 cd graph-analysis
 ```
 
-### Build the project
+### Сборка проекта
 
 ```bash
 mkdir -p build && cd build
@@ -61,68 +62,68 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 make -j
 ```
 
-If you want to disable CUDA support, use:
+Чтобы отключить поддержку CUDA, используйте следующую команду:
 
 ```bash
 cmake .. -DUSE_CUDA=OFF
 ```
 
-### Run tests
+### Запуск тестов
 
 ```bash
 cd build
 ctest
 ```
 
-## Project Structure
+## Структура проекта
 
-```
+```text
 graph-analysis/
-├── data/            # Graph datasets
-├── deps/            # Dependencies (submodules)
-│   ├── GraphBLAS/   # GraphBLAS library
-│   ├── LAGraph/     # LAGraph library
-│   ├── gunrock/     # Gunrock library
-│   └── spla/        # SPLA library
-├── src/             # Source code
-│   ├── lib/         # Main library code
-│   ├── tests/       # Unit tests
-│   └── experiment/  # Benchmark code
-└── test_data/       # Data for testing
+├── data/            # Наборы данных с графами
+├── deps/            # Зависимости (Git-подмодули)
+│   ├── GraphBLAS/   # Библиотека GraphBLAS
+│   ├── LAGraph/     # Библиотека LAGraph
+│   ├── gunrock/     # Библиотека Gunrock
+│   └── spla/        # Библиотека SPLA
+├── src/             # Исходный код
+│   ├── lib/         # Основной код библиотеки
+│   ├── tests/       # Модульные тесты
+│   └── experiment/  # Код для измерения производительности
+└── test_data/       # Тестовые данные
 ```
 
-## Experiment
+## Эксперимент
 
-The experiment compares the performance of two Minimum Spanning Tree (MST) algorithms (Prim's and Borůvka's) implemented using different libraries across various graph datasets.
+В эксперименте сравнивается производительность алгоритмов построения минимального остовного дерева (MST) — алгоритмов Прима и Борувки. Для каждого алгоритма рассматриваются реализации на базе разных библиотек и проводится тестирование на нескольких наборах графов.
 
-### Experiment Setup
+### Конфигурация тестового стенда
 
-- **Hardware Platform**:
-  - **OS**: Ubuntu 24.04 LTS
-  - **GPU**: NVIDIA GeForce RTX 3050 Ti Laptop GPU (4GB VRAM)
-  - **GPU Driver**: Version 32.0.15.5597
-  - **CUDA Toolkit**: 12.3
-  - **CUDA Cores**: 2560
-  - **CPU**: 11th Gen Intel Core i7-11800H @ 2.30GHz
-  - **Cache**: L1 – 640KB, L2 – 10MB, L3 – 24MB
-  - **RAM**: 16 GB
+- **Аппаратная и программная конфигурация**:
+  - **ОС**: Ubuntu 24.04 LTS;
+  - **GPU**: NVIDIA GeForce RTX 3050 Ti Laptop GPU (4 ГБ видеопамяти);
+  - **драйвер GPU**: версия 32.0.15.5597;
+  - **CUDA Toolkit**: 12.3;
+  - **ядра CUDA**: 2560;
+  - **CPU**: Intel Core i7-11800H 11-го поколения, 2,30 ГГц;
+  - **кеш-память**: L1 — 640 КБ, L2 — 10 МБ, L3 — 24 МБ;
+  - **оперативная память**: 16 ГБ.
 
-### Running the Experiment
+### Запуск эксперимента
 
 ```bash
 cd build
 ./mst_benchmark
 ```
 
-### Analyzing Results
+### Анализ результатов
 
-The experiment generates CSV files with detailed performance measurements. Use the provided Python script to visualize the results:
+По итогам эксперимента создаются CSV-файлы с подробными измерениями производительности. Для визуализации результатов используйте входящий в проект Python-скрипт:
 
 ```bash
 mv build/benchmark_results.csv .
 python make_graphics.py
 ```
 
-## License
+## Лицензия
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Проект распространяется по лицензии MIT. Подробности приведены в файле [LICENSE](LICENSE).
